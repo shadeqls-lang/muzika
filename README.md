@@ -32,10 +32,6 @@ a lightweight soundcloud desktop client for windows. it's a standalone `.exe`, n
 2. run `muzika.exe`
 3. press **link soundcloud** and log in
 
-### build from source
-
-run `build.bat`. it produces `muzika.exe`.
-
 ## feedback
 
 found a bug or have an idea?
