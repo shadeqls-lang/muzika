@@ -33,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.5.2";
+        public const string Version = "0.5.3";
         public static Mutex Single;
         public static bool JustUpdated;
 
@@ -940,7 +940,7 @@ namespace Emopunk
                 try { tray.Text = t.Length > 63 ? t.Substring(0, 62) + "…" : t; } catch { }
                 miPlay.Text = playing ? "pause" : "play";
                 Text = "muzika · " + Str(m, "title");
-                rpc.SetTrack(Str(m, "title"), Str(m, "artist"), playing, Num(m, "pos"), Num(m, "dur"));
+                rpc.SetTrack(Str(m, "title"), Str(m, "artist"), playing, Num(m, "pos"), Num(m, "dur"), Str(m, "art"), Str(m, "url"), Str(m, "aurl"));
             }
             else if (cmd == "played") lib.Played(Str(m, "id"));
             else if (cmd == "scState") { Post(new { type = "scState", logged = sc.Token != null }); if (sc.Token != null) SendMe(); }
@@ -1052,8 +1052,10 @@ namespace Emopunk
             }
             else if (cmd == "scSearch")
             {
-                string q = Str(m, "q");
-                ScCall((int)Num(m, "req"), delegate { return new[] { "search", sc.Search(q) }; });
+                string q = Str(m, "q"), what = Str(m, "what");
+                if (what != "users" && what != "playlists") what = "tracks";
+                int lim = (int)Num(m, "limit"); if (lim < 1 || lim > 50) lim = 30;
+                ScCall((int)Num(m, "req"), delegate { return new[] { what == "tracks" ? "search" : "search_" + what, sc.Search(q, what, lim) }; });
             }
             else if (cmd == "scMore")
             {

@@ -18,7 +18,10 @@ namespace Emopunk
         readonly int pid = Process.GetCurrentProcess().Id;
 
         // wanted state (set from the UI thread)
-        bool enabled; string appId = "", gif = "";
+        // muzika's own discord application: nothing to set up, just switch it on
+        public const string DefaultAppId = "";
+        public const string DefaultGif = "https://raw.githubusercontent.com/shadeqls-lang/muzika/main/assets/rpc.gif";
+        bool enabled; string appId = "", gif = "", art = "", url = "", aurl = "";
         string title = "", artist = ""; bool playing; double pos, dur; DateTime posAt = DateTime.UtcNow;
         bool hasTrack, dirty;
         volatile bool stop;
@@ -42,23 +45,24 @@ namespace Emopunk
         {
             lock (gate)
             {
-                id = (id ?? "").Trim();
+                id = (id ?? "").Trim(); if (id.Length == 0) id = DefaultAppId;
                 bool idOk = id.Length >= 15 && id.Length <= 22;
                 foreach (char c in id) if (c < '0' || c > '9') idOk = false;
                 enabled = on && idOk;
                 if (id != appId) nextConnect = DateTime.MinValue;
                 appId = id;
-                gif = (gifUrl ?? "").Trim();
+                gif = (gifUrl ?? "").Trim(); if (gif.Length == 0) gif = DefaultGif;
                 dirty = true;
                 if (!on) State("off");
-                else if (!idOk) State("paste the application id from discord.com/developers");
+                else if (!idOk) State(DefaultAppId.Length == 0 ? "needs an application id (see below)" : "that application id doesn't look right");
             }
         }
 
-        public void SetTrack(string t, string a, bool isPlaying, double position, double duration)
+        public void SetTrack(string t, string a, bool isPlaying, double position, double duration, string artUrl, string trackUrl, string artistUrl)
         {
             lock (gate)
             {
+                art = HttpsOnly(artUrl); url = HttpsOnly(trackUrl); aurl = HttpsOnly(artistUrl);
                 title = t ?? ""; artist = a ?? ""; playing = isPlaying;
                 pos = position; dur = duration; posAt = DateTime.UtcNow;
                 hasTrack = title.Length > 0; dirty = true;
@@ -115,6 +119,8 @@ namespace Emopunk
             if (pipe != null) { try { SendActivity(null); } catch { } Close(); }
         }
 
+        static string HttpsOnly(string u) { u = (u ?? "").Trim(); return u.StartsWith("https://") && u.Length < 256 ? u : ""; }
+
         static string Clip(string s, int max)
         {
             s = (s ?? "").Trim();
@@ -125,9 +131,12 @@ namespace Emopunk
         Dictionary<string, object> BuildActivity()
         {
             Dictionary<string, object> a = new Dictionary<string, object>();
-            a["type"] = 2;   // "listening to"
+            a["type"] = 2;                  // "listening to"
+            a["status_display_type"] = 2;   // the member list says "listening to <track>", not "listening to muzika"
             a["details"] = Clip(title, 128);
-            a["state"] = Clip(playing ? "by " + artist : "paused", 128);
+            a["state"] = Clip(playing ? artist : "paused · " + artist, 128);
+            if (url.Length > 0) a["details_url"] = url;
+            if (aurl.Length > 0) a["state_url"] = aurl;
             if (playing && dur > 0)
             {
                 double p = pos + (DateTime.UtcNow - posAt).TotalSeconds;
@@ -136,9 +145,15 @@ namespace Emopunk
                 a["timestamps"] = new Dictionary<string, object> { { "start", start }, { "end", start + (long)(dur * 1000) } };
             }
             Dictionary<string, object> assets = new Dictionary<string, object>();
-            if (gif.StartsWith("https://") || gif.StartsWith("http://")) { assets["large_image"] = gif; assets["large_text"] = "muzika"; }
+            bool g = gif.StartsWith("https://") || gif.StartsWith("http://");
+            // the track's cover big, the muzika gif small in the corner; no cover, the gif takes the big spot
+            if (art.Length > 0) { assets["large_image"] = art; assets["large_text"] = Clip(title, 128); if (g) { assets["small_image"] = gif; assets["small_text"] = "muzika"; } }
+            else if (g) { assets["large_image"] = gif; assets["large_text"] = "muzika"; }
             if (assets.Count > 0) a["assets"] = assets;
-            a["buttons"] = new object[] { new Dictionary<string, object> { { "label", "get muzika" }, { "url", "https://t.me/emopunk" } } };
+            List<object> btn = new List<object>();
+            if (url.Length > 0) btn.Add(new Dictionary<string, object> { { "label", "listen on soundcloud" }, { "url", url } });
+            btn.Add(new Dictionary<string, object> { { "label", "get muzika" }, { "url", "https://github.com/shadeqls-lang/muzika/releases/latest" } });
+            a["buttons"] = btn.ToArray();
             return a;
         }
 

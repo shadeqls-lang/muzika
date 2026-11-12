@@ -397,6 +397,13 @@ body:not(.color) .tirel .rr i{filter:grayscale(1)}
 .now .thumb{cursor:pointer}
 @media (max-width:900px){ .tip{grid-template-columns:1fr;height:86vh} .tileft{flex-direction:row;align-items:end} .tic{width:38%} .tiyou{flex:1} }
 
+.rpcs{color:var(--ink)!important;font-weight:500}
+details.adv{margin-top:10px}
+details.adv summary{font-size:11px;color:var(--dim);cursor:pointer;list-style:none}
+details.adv summary::before{content:"+ "}
+details.adv[open] summary::before{content:"– "}
+details.adv summary:hover{color:var(--ink)}
+
 /* ================= visualizer picker ================= */
 .vzgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .vzb{display:flex;flex-direction:column;gap:6px;padding:6px 6px 8px;border-radius:12px;background:rgba(var(--fg),.035);box-shadow:inset 0 0 0 1px rgba(var(--fg),.08);transition:background .2s,box-shadow .2s}
@@ -730,6 +737,60 @@ body.v-lib #lib,body.v-find #find,body.v-scpl #scpl{opacity:1;visibility:visible
 .findbar input::placeholder{color:var(--dim)}
 .kbd{font-size:10px;color:var(--dim);box-shadow:inset 0 0 0 1px rgba(var(--fg),.18);border-radius:6px;padding:4px 7px}
 .recent{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0 16px;min-height:28px}
+.findbar .fx{width:28px;height:28px;border-radius:50%;font-size:18px;line-height:1;color:var(--dim);display:none;place-items:center}
+.findbar .fx:hover{background:rgba(var(--fg),.08);color:var(--ink)}
+.findbar.has .fx{display:grid}
+/* people and playlists above the tracks, in "all" */
+.ftop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.ftop:empty{display:none}
+.fsec{padding:14px 16px 16px;border-radius:20px;min-width:0}
+.fsec .fh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.fsec .fh button{font-size:11px;color:var(--dim)}
+.fsec .fh button:hover{color:var(--ink);text-decoration:underline}
+.frow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:12px}
+.fp{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;cursor:pointer;padding:6px 2px;border-radius:14px;transition:background .2s}
+.fp:hover{background:rgba(var(--fg),.05)}
+.fp i{width:min(76px,100%);aspect-ratio:1;border-radius:50%;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.1)}
+.fp b{font-size:12px;font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp span{font-size:10px;color:var(--dim);margin-top:-5px}
+.fq{display:flex;flex-direction:column;gap:7px;min-width:0;cursor:pointer}
+.fq i{width:100%;aspect-ratio:1;border-radius:8px;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.1);transition:transform .5s var(--spring)}
+.fq:hover i{transform:scale(1.03)}
+.fq b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fq span{font-size:10px;color:var(--dim);margin-top:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body:not(.color) .fp i,body:not(.color) .fq i,body:not(.color) .urow .art{filter:grayscale(1) contrast(1.05)}
+.fsk{background:rgba(var(--fg),.05)!important;box-shadow:none!important;animation:fsk 1.2s ease-in-out infinite}
+@keyframes fsk{50%{opacity:.5}}
+/* a person in a list */
+.urow{display:grid;grid-template-columns:48px minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:7px 12px;border-radius:12px;cursor:pointer;transition:background .2s}
+.urow:hover{background:rgba(var(--fg),.05)}
+.urow .art{width:48px;height:48px;border-radius:50%;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.1)}
+.urow .t{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urow .a{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urow .n{font-size:13px;font-style:italic;font-weight:200;color:var(--ink);text-align:right}
+.urow .n small{display:block;font-size:10px;font-style:normal;font-weight:500;color:var(--dim)}
+.urow .go{font-size:11px;color:var(--dim);padding:0 6px}
+#scList.grid:has(.utile){grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:24px 18px}
+.utile i{max-width:110px}
+.utile{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;cursor:pointer;min-width:0}
+.utile i{width:100%;aspect-ratio:1;border-radius:50%;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.1)}
+.utile b{font-size:12px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.utile span{font-size:10px;color:var(--dim);margin-top:-5px}
+/* before searching: things to start from */
+.fhome{padding:22px 24px;display:flex;flex-direction:column;gap:26px}
+.fhome .hs{display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{height:34px;padding:0 16px;border-radius:17px;font-size:12px;color:var(--txt);box-shadow:inset 0 0 0 1px rgba(var(--fg),.14);transition:background .2s,color .2s,box-shadow .2s}
+.chips button:hover{background:rgba(var(--fg),.08);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(var(--fg),.3)}
+.fart{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fart button{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:8px;border-radius:14px;background:rgba(var(--fg),.035);box-shadow:inset 0 0 0 1px rgba(var(--fg),.07);transition:background .2s}
+.fart button:hover{background:rgba(var(--fg),.08)}
+.fart i{width:40px;height:40px;border-radius:50%;background:var(--s2) center/cover}
+body:not(.color) .fart i{filter:grayscale(1)}
+.fart b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fart span{display:block;font-size:10px;color:var(--dim);margin-top:2px}
+.fhome .big{font-size:clamp(22px,3.2vh,32px);font-weight:700;letter-spacing:-.04em;line-height:1.05;color:var(--hi);max-width:560px}
+.fhome .big em{font-weight:200;font-style:italic;color:var(--dim)}
 .recent button{height:28px;padding:0 12px;border-radius:14px;font-size:11px;color:var(--txt);box-shadow:inset 0 0 0 1px rgba(var(--fg),.14);transition:background .2s,color .2s}
 .recent button:hover{background:rgba(var(--fg),.07);color:var(--ink)}
 .recent .lbl{margin-right:4px}
@@ -965,9 +1026,11 @@ body[data-theme=paper] .giant{color:var(--ink)}
 </section>
 
 <section id="find" class="page">
-  <div class="phd"><h1>find</h1></div>
-  <div class="findbar lg"><svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="scQ" placeholder="search soundcloud or paste a link" spellcheck="false"><span class="kbd">enter</span></div>
+  <div class="phd"><h1>find</h1>
+    <div class="seg" id="findSeg" style="grid-template-columns:repeat(4,1fr);width:340px"><div class="knob"></div><button data-v="all">all</button><button data-v="tracks">tracks</button><button data-v="users">people</button><button data-v="playlists">playlists</button></div></div>
+  <div class="findbar lg"><svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="scQ" placeholder="tracks, people, playlists, or a soundcloud link" spellcheck="false"><button class="fx" id="scX" title="clear">×</button><span class="kbd">enter</span></div>
   <div class="recent" id="recent"></div>
+  <div class="ftop" id="findTop"></div>
   <div class="listw lg grow"><div class="sch"><span class="ttl" id="scTitle">results</span><span class="cnt" id="scCnt"></span></div><div class="slist" id="scList"></div></div>
 </section>
 
@@ -1018,9 +1081,11 @@ body[data-theme=paper] .giant{color:var(--ink)}
           <p><span id="cacheInfo">streamed tracks are kept here so replays start instantly. oldest go first when it's full.</span> <button class="lo" id="cacheClr" style="text-decoration:underline">clear now</button></p></div>
       <div class="row2"><span class="lbl">discord status</span>
           <div class="seg" data-k="rpc" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="on">on</button><button data-v="off">off</button></div>
-          <input class="fin" id="rpcId" placeholder="application id" spellcheck="false">
-          <input class="fin" id="rpcGif" placeholder="gif link, https://i.imgur.com/...gif" spellcheck="false">
-          <p id="rpcState">off</p></div>
+          <p id="rpcState" class="rpcs">off</p>
+          <p>shows the track, its cover, the time left and a soundcloud button on your discord profile. discord has to be open on this pc.</p>
+          <details class="adv"><summary>advanced</summary>
+            <input class="fin" id="rpcId" placeholder="own application id (optional)" spellcheck="false">
+            <input class="fin" id="rpcGif" placeholder="own gif link (optional)" spellcheck="false"></details></div>
     </div>
     <div class="scol"><span class="sh">app</span>
       <div class="row2"><span class="lbl">updates</span>
@@ -1190,7 +1255,11 @@ function flushListen(){
 }
 addEventListener("beforeunload",flushListen);
 $("#tg").onclick=()=>{ if(HOST) send({cmd:"open",url:"https://t.me/emopunk"}); else window.open("https://t.me/emopunk","_blank"); };
-function tellHost(){ if(cur) send({cmd:"now",title:cur.title,artist:cur.artist,playing:!audio.paused,pos:audio.currentTime||0,dur:audio.duration||cur.dur||0}); }
+// the cover as discord can load it: the real soundcloud address, 500px
+function rawArt(u){ if(!u) return ""; const m=String(u).match(/[?&]u=([^&]+)/); let r=m?decodeURIComponent(m[1]):String(u);
+  return /^https:\/\/[^/]+\.sndcdn\.com\//.test(r)?r.replace(/-(large|t300x300|t67x67|crop|badge|small|tiny|mini|original)\./,"-t500x500."):""; }
+function tellHost(){ if(cur) send({cmd:"now",title:cur.title,artist:cur.artist,playing:!audio.paused,pos:audio.currentTime||0,dur:audio.duration||cur.dur||0,
+  art:rawArt(cur.pic||cur.thumb),url:cur.scUrl||"",aurl:""}); }
 onA("seeked",()=>tellHost());
 function sendRpcCfg(){ send({cmd:"discord",on:FX.rpc==="on",id:FX.rpcId.trim(),gif:FX.rpcGif.trim()}); if(!HOST) $("#rpcState").textContent="works in the exe only"; }
 
@@ -1530,12 +1599,14 @@ function go(v,fresh){
   if(v===curView&&!fresh) return;
   NAV.push({v:curView,list:LISTV.includes(curView)?listState():null,su:Object.assign({},SU),plp:PLP.data,plpl:PLP.local,lib:LIB.tab}); if(NAV.length>40) NAV.shift();
   view(v);
+  if(v==="find") requestAnimationFrame(()=>segTo($("#findSeg"),$(`#findSeg [data-v="${FIND.mode}"]`)));
   if(!fresh){ if(v==="lib") libLoad(); else if(v==="find"){ useList(ST.find); setTimeout(()=>$("#scQ").focus(),60); } }
 }
 function back(){
   const s=NAV.pop(); if(!s) return;
   Object.assign(SU,s.su); PLP.data=s.plp; PLP.local=s.plpl||null; LIB.tab=s.lib;
   view(s.v);
+  if(s.v==="find") segTo($("#findSeg"),$(`#findSeg [data-v="${FIND.mode}"]`));
   if(s.v==="scu") renderScu(); if(s.v==="scpl") renderPlp(); if(s.v==="lib"){ if(!LIBT[LIB.tab]) LIB.tab="likes"; libSegs(); }
   if(s.list) useList(s.list);
   updBack();
@@ -2162,25 +2233,68 @@ $("#libView").onclick=e=>{ const b=e.target.closest("button"); if(!b||b.dataset.
 $("#libQ").addEventListener("input",e=>{ LIB.q=e.target.value.trim().toLowerCase(); renderSc(); });
 $("#libPlay").onclick=()=>{ const l=visibleItems().filter(x=>!x.pl&&!x.stub&&!x.snip); if(!l.length) return toast("nothing to play here"); scPlayFrom(shuffle?l[Math.random()*l.length|0]:l[0]); };
 
-/* find */
+/* find: tracks, people, playlists */
+const FIND={mode:store.get("findMode","all"),q:"",ureq:0,preq:0,users:null,pls:null};
+const VIBES=["plugg","dark plugg","rage","hyperpop","jerk","phonk","drill","jersey club","cloud rap","emo rap","memphis","digicore","shoegaze","breakcore"];
+function userItem(u){ if(!u||!u.id) return null; return {user:true,id:String(u.id),title:u.username||"",artist:[u.full_name,u.city].filter(Boolean).join(" · "),
+  art:IMG((u.avatar_url||"").replace("-large","-t300x300")),followers:u.followers_count||0,tracks:u.track_count||0}; }
+function findHome(){
+  // artists you actually play, from your own stats
+  const by={}; for(const t of tracks){ if(!t.sc||!t.artist) continue; const k=t.artist.toLowerCase(); const a=by[k]||(by[k]={name:t.artist,uid:t.uid,sec:0,pic:t.thumb||t.pic}); a.sec+=t.secs||0; if(!a.uid&&t.uid) a.uid=t.uid; }
+  const arts=Object.values(by).filter(a=>a.sec>=60).sort((a,b)=>b.sec-a.sec).slice(0,8);
+  return `<div class="fhome">
+    <div class="big">look for anything on soundcloud. <em>a track, a person, a playlist, or paste a link.</em></div>
+    <div class="hs"><span class="lbl">vibes</span><div class="chips">${VIBES.map(v=>`<button data-q="${v}">${v}</button>`).join("")}</div></div>
+    ${arts.length?`<div class="hs"><span class="lbl">artists you play</span><div class="fart">${arts.map(a=>`<button ${a.uid?`data-uid="${a.uid}"`:`data-q="${esc(a.name)}"`}><i style="${a.pic?`background-image:url('${a.pic}')`:""}"></i><div style="min-width:0"><b>${esc(a.name)}</b><span>${hm(a.sec)} listened</span></div></button>`).join("")}</div></div>`:""}
+  </div>`;
+}
+function renderFindTop(){
+  const box=$("#findTop");
+  if(FIND.mode!=="all"||!FIND.q||/^https?:/i.test(FIND.q)){ box.innerHTML=""; return; }
+  const sk=(n,cls)=>Array.from({length:n},()=>`<div class="${cls}"><i class="fsk"></i><b>&nbsp;</b></div>`).join("");
+  const us=FIND.users, ps=FIND.pls;
+  box.innerHTML=`<div class="fsec lg"><div class="fh"><span class="lbl">people</span>${us&&us.length?'<button data-m="users">all people</button>':""}</div>
+      <div class="frow">${us==null?sk(5,"fp"):us.length?us.slice(0,5).map(u=>`<div class="fp" data-user="${u.id}"><i style="${u.art?`background-image:url('${u.art}')`:""}"></i><b>${esc(u.title)}</b><span>${fmtN(u.followers)} followers</span></div>`).join(""):'<span class="lbl" style="opacity:.6">nobody by that name</span>'}</div></div>
+    <div class="fsec lg"><div class="fh"><span class="lbl">playlists</span>${ps&&ps.length?'<button data-m="playlists">all playlists</button>':""}</div>
+      <div class="frow">${ps==null?sk(5,"fq"):ps.length?ps.slice(0,5).map(p=>`<div class="fq" data-pl="${p.id}"><i style="${p.art?`background-image:url('${p.art}')`:""}"></i><b>${esc(p.title)}</b><span>${esc(p.artist)} · ${p.count}</span></div>`).join(""):'<span class="lbl" style="opacity:.6">no playlists</span>'}</div></div>`;
+  requestAnimationFrame(buildGlass);
+}
+$("#findTop").onclick=e=>{
+  const m=e.target.closest("[data-m]"); if(m){ setFindMode(m.dataset.m); return; }
+  const u=e.target.closest("[data-user]"); if(u){ openScUser(u.dataset.user); return; }
+  const p=e.target.closest("[data-pl]"); if(p){ const it=(FIND.pls||[]).find(x=>x.id===p.dataset.pl); openPlaylist(p.dataset.pl,it?it.title:""); }
+};
+function setFindMode(v){ if(v===FIND.mode) return; FIND.mode=v; store.set("findMode",v); segTo($("#findSeg"),$(`#findSeg [data-v="${v}"]`)); if(FIND.q) scGo(true); else { renderFindTop(); renderSc(); } }
+$("#findSeg").onclick=e=>{ const b=e.target.closest("button"); if(b) setFindMode(b.dataset.v); };
+$("#scQ").addEventListener("input",e=>$(".findbar").classList.toggle("has",!!e.target.value));
+$("#scX").onclick=()=>{ $("#scQ").value=""; $(".findbar").classList.remove("has"); FIND.q=""; SC.req++; SC.items=[]; SC.next=null; SC.kind=""; setTitle("results"); setCount(""); renderFindTop(); renderSc(); $("#scQ").focus(); };
 const RECENT=store.get("recent",[]);
 function renderRecent(){
   $("#recent").innerHTML=RECENT.length?'<span class="lbl">recent</span>'+RECENT.map(q=>`<button data-q="${esc(q)}">${esc(q.length>40?q.slice(0,40)+"…":q)}</button>`).join("")+'<button class="clr" data-clr="1">clear</button>':"";
 }
 $("#recent").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.clr){ RECENT.length=0; store.set("recent",RECENT); renderRecent(); return; } $("#scQ").value=b.dataset.q; scGo(); };
-function scGo(){
-  const v=$("#scQ").value.trim(); if(!v) return;
+function scGo(again){
+  const v=$("#scQ").value.trim(); if(!v) return; FIND.q=v; $(".findbar").classList.add("has");
   if(!HOST){ toast("works in muzika.exe only"); return; }
   const i=RECENT.indexOf(v); if(i>=0) RECENT.splice(i,1); RECENT.unshift(v); RECENT.length=Math.min(RECENT.length,8); store.set("recent",RECENT); renderRecent();
   if(/^https?:\/\//i.test(v)){
     if(!/^https?:\/\/((www|m|on)\.)?soundcloud\.com\//i.test(v)){ scBox().innerHTML='<div class="emptyl"><div><b>only soundcloud.</b>paste a soundcloud.com link</div></div>'; return; }
     scBusy(); setTitle("link"); send({cmd:"scOpen",url:v,req:SC.req});
-  } else { scBusy(); setTitle(v); send({cmd:"scSearch",q:v,req:SC.req}); }
+  } else {
+    const m=FIND.mode, what=m==="all"?"tracks":m;
+    scBusy(); setTitle(m==="users"?"people · "+v:m==="playlists"?"playlists · "+v:v); send({cmd:"scSearch",q:v,what,limit:m==="all"?24:30,req:SC.req});
+    FIND.users=FIND.pls=null;
+    if(m==="all"){ FIND.ureq=6e6+Math.floor(Math.random()*1e5); FIND.preq=FIND.ureq+5e5;
+      send({cmd:"scSearch",q:v,what:"users",limit:6,req:FIND.ureq}); send({cmd:"scSearch",q:v,what:"playlists",limit:6,req:FIND.preq}); }
+  }
+  renderFindTop();
 }
 $("#scQ").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); scGo(); } });
 
 /* answers from the app */
 function scData(m){
+  if(m.req&&m.req===FIND.ureq){ FIND.ureq=0; FIND.users=((m.data||{}).collection||[]).map(userItem).filter(Boolean); renderFindTop(); return; }
+  if(m.req&&m.req===FIND.preq){ FIND.preq=0; FIND.pls=((m.data||{}).collection||[]).map(scPlItem).filter(Boolean); renderFindTop(); return; }
   if(m.kind==="radio"){ if(m.req===RADIO.req) radioData(m.data); else if(m.req===TIS.rreq) tiRelated(m.data); return; }
   if(m.kind==="resolve"){ const f=RQ[m.req]; if(f){ delete RQ[m.req]; f(m.data); } return; }
   if(m.kind==="user"){ if(m.req===SU.req){ SU.user=m.data; renderScu(); } return; }
@@ -2209,6 +2323,8 @@ function scData(m){
   if(m.req!==SC.req) return;
   const d=m.data||{}; let list=[]; SC.loading=false;
   if(m.kind==="search"||m.kind==="usertracks"){ list=(d.collection||[]).map(scItem); SC.next=d.next_href||null; }
+  else if(m.kind==="search_users"){ list=(d.collection||[]).map(userItem); SC.next=d.next_href||null; }
+  else if(m.kind==="search_playlists"){ list=(d.collection||[]).map(scPlItem); SC.next=d.next_href||null; }
   else if(m.kind==="likes"){ list=likeList("likes",d); SC.next=d.next_href||null; }
   else if(m.kind==="feed"){ list=(d.collection||[]).map(x=>x.track?scItem(x.track):x.playlist?scPlItem(x.playlist):null); SC.next=d.next_href||null; }
   else if(m.kind==="playlists"){ list=(d.collection||[]).map(x=>scPlItem(x.playlist||x)); SC.next=d.next_href||null; }
@@ -2241,20 +2357,26 @@ function scActs(it){
   return `<button class="ic rad" data-act="radio" title="radio from this track">${ICON2.radio}</button><button class="ic" data-act="add" title="add to a muzika playlist">${ICON2.plus}</button>`+
     (curView==="scpl"&&PLP.local?`<button class="ic" data-act="rm" title="remove from this playlist">${ICON2.x}</button>`:`<button class="ic${sv?" on":""}" data-act="save" title="${sv?"remove from likes":"like"}">${ICON.heart}</button>`);
 }
+function userRowHtml(it){ return `<div class="urow" data-user="${it.id}"><div class="art" style="${it.art?`background-image:url('${it.art}')`:""}"></div>
+  <div style="min-width:0"><div class="t">${esc(it.title)}</div><div class="a">${esc(it.artist||"soundcloud")}</div></div>
+  <div class="n">${fmtN(it.followers)}<small>followers</small></div><div class="n">${fmtN(it.tracks)}<small>tracks</small></div></div>`; }
+function userTileHtml(it){ return `<div class="utile" data-user="${it.id}"><i style="${it.art?`background-image:url('${it.art}')`:""}"></i><b>${esc(it.title)}</b><span>${fmtN(it.followers)} followers</span></div>`; }
 function scRowHtml(it,i){
+  if(it.user) return userRowHtml(it);
   const playing=!it.pl&&cur&&cur.sc===it.id;
   return `<div class="srow${it.pl?" plrow":""}${playing?" cur":""}" data-id="${it.id}" data-pl="${it.pl?1:0}"><div class="art">${it.art?`<img src="${it.art}" loading="lazy" decoding="async" alt="">`:""}</div>
     <div style="min-width:0"><div class="t">${esc(it.title||"…")}${it.local?'<span class="tagm">muzika</span>':""}</div><div class="a">${it.uid?`<span class="ulink" data-uid="${it.uid}">${esc(it.artist)}</span>`:esc(it.artist)}</div></div>
     <span class="p it${it.when?" wh":""}" title="${it.when?"played":"plays"}">${it.when?whenLbl(it.when):it.pl||it.stub?"":fmtN(it.plays)}</span><span class="d it">${it.pl||it.stub?"":fmt(it.dur)}</span><div class="sact">${scActs(it)}</div></div>`;
 }
 function scTileHtml(it){
+  if(it.user) return userTileHtml(it);
   const playing=!it.pl&&cur&&cur.sc===it.id, lk=!it.pl&&isLiked(it.id);
   const acts=it.pl||it.stub?"":`<div class="tact"><button class="ic" data-act="radio" title="radio from this track">${ICON2.radio}</button><button class="ic" data-act="add" title="add to a muzika playlist">${ICON2.plus}</button></div>`;
   return `<div class="stile${playing?" cur":""}" data-id="${it.id}" data-pl="${it.pl?1:0}"><div class="art">${it.art?`<img src="${it.art}" loading="lazy" decoding="async" alt="">`:""}<span class="eqm"><i></i><i></i><i></i></span>${acts}</div>
     <div class="t">${it.pl?"":`<button class="hk${lk?" on":""}" data-act="save" title="${lk?"remove from likes":"like"}">${ICON.heart}</button>`}<span>${esc(it.title||"…")}</span></div>
     <div class="a">${it.pl?(it.local?"muzika playlist · ":"")+it.count+" tracks":it.uid?`<span class="ulink" data-uid="${it.uid}">${esc(it.artist)}</span>`:esc(it.artist)}</div></div>`;
 }
-const gridOn=()=>(curView==="lib"||curView==="scu")&&LIB.view==="grid";
+const gridOn=()=>(curView==="lib"||curView==="scu"||(curView==="find"&&FIND.mode==="users"))&&(LIB.view==="grid"||curView==="find");
 function renderSc(){
   const box=scBox(); if(!box) return;
   box.classList.toggle("grid",gridOn());
@@ -2263,7 +2385,7 @@ function renderSc(){
   const all=visibleItems(), cap=curView==="scu"?SU.show:Infinity, items=all.slice(0,cap);
   if(!items.length){
     if(SC.loading) return;
-    box.innerHTML=curView==="find"&&!SC.req?'<div class="emptyl"><div><b>find music.</b>type a name and press enter,<br>or paste a soundcloud link.</div></div>'
+    box.innerHTML=curView==="find"&&!FIND.q?findHome()
       :curView==="lib"&&LIB.tab==="history"&&!LIB.q?'<div class="emptyl"><div><b>nothing yet.</b>everything you play shows up here,<br>so the track from radio is never lost.</div></div>'
       :curView==="lib"&&LIB.tab==="likes"&&!LIB.q?'<div class="emptyl"><div><b>no likes yet.</b>press the heart on any track,<br>it lands here instantly.</div></div>'
       :`<div class="emptyl"><div><b>nothing.</b>${curView==="lib"&&LIB.q?"no match for that filter":"nothing to show here"}</div></div>`;
@@ -2276,6 +2398,7 @@ function renderSc(){
   const nt=all.filter(x=>!x.pl).length, np=all.length-nt;
   if(curView==="scu"&&SU.tab==="tracks"&&SC.kind==="usertracks"){ SU.trk=all.filter(x=>!x.pl); renderShelf(); }
   if(SC.kind==="hist") return setCount(nt+" tracks, last 30 days");
+  if(SC.kind==="search_users") return setCount(all.length+(SC.next?"+":"")+" people");
   setCount((nt?nt+(SC.next?"+":"")+" tracks":"")+(np?(nt?" · ":"")+np+" playlists":""));
 }
 function renderScRow(id){
@@ -2297,6 +2420,8 @@ const scClick=e=>{
     if(SU.show>n&&SC.next){ e.target.textContent="loading"; e.target.disabled=true; send({cmd:"scMore",next:SC.next,kind:SC.kind,req:SC.req}); } else renderSc(); return; }
   if(e.target.id==="scMore"){ e.target.textContent="loading"; e.target.disabled=true; send({cmd:"scMore",next:SC.next,kind:SC.kind,req:SC.req}); return; }
   const ul=e.target.closest(".ulink"); if(ul){ openScUser(ul.dataset.uid); return; }
+  const us=e.target.closest("[data-user]"); if(us){ openScUser(us.dataset.user); return; }
+  const hq=e.target.closest(".fhome [data-q],.fhome [data-uid]"); if(hq){ if(hq.dataset.uid) openScUser(hq.dataset.uid); else { $("#scQ").value=hq.dataset.q; scGo(); } return; }
   const row=e.target.closest(".srow,.stile"); if(!row) return;
   if(row.dataset.pl==="1"){ const p=SC.items.find(x=>x.pl&&x.id===row.dataset.id); if(p){ if(p.local) openLocalPl(p.id); else openPlaylist(p.id,p.title); } return; }
   const it=SC.items.find(x=>!x.pl&&x.id===row.dataset.id); if(!it) return;

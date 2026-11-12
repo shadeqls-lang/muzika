@@ -1,4 +1,8 @@
-## new in 0.5.2
+## new in 0.5.3
+- **find, redone**: search tracks, people and playlists. "all" shows people and playlists on top and tracks below, or pick one kind. before you search: vibes to start from and the artists you play most
+- **discord status**: the track's cover big with the muzika ring in the corner, the time left, your profile says "listening to <track>", and a "listen on soundcloud" button. the setup moved under "advanced"
+
+## 0.5.2
 - **visualizers hear more**: muzika now listens to three parts of the sound on their own. kicks and 808s in the low end, claps and snares in the middle, hats on top. each keeps its own level, so a wall of bass still shows every new hit, and claps are caught on their own
 - **starfield** speeds up with the loudness every moment and jumps on kicks and claps
 - **pulse** sends a big ring on kicks and a thin fast ring on claps

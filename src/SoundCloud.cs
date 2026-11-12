@@ -303,9 +303,13 @@ namespace Emopunk
             return null;
         }
 
-        public string Search(string q)
+        public string Search(string q) { return Search(q, "tracks", 30); }
+
+        // tracks, users (people) or playlists
+        public string Search(string q, string what, int limit)
         {
-            return Api("/search/tracks?q=" + Uri.EscapeDataString(q) + "&limit=30&linked_partitioning=1");
+            string path = what == "users" ? "/search/users" : what == "playlists" ? "/search/playlists_without_albums" : "/search/tracks";
+            return Api(path + "?q=" + Uri.EscapeDataString(q) + "&limit=" + limit + "&linked_partitioning=1");
         }
 
         public string More(string next)
