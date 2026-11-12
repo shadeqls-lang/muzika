@@ -33,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.4.1";
+        public const string Version = "0.4.2";
         public static Mutex Single;
         public static bool JustUpdated;
 
@@ -457,6 +457,40 @@ namespace Emopunk
                 noFlush = true;   // the in-memory library must not overwrite the restored one
                 Restart("--restart");
             }
+        }
+
+        // ---------- wrapped: the picture goes to a file or the clipboard ----------
+        void SaveImage(string dataUrl, string name, bool copy)
+        {
+            try
+            {
+                int i = (dataUrl ?? "").IndexOf("base64,", StringComparison.Ordinal);
+                if (i < 0) return;
+                byte[] png = Convert.FromBase64String(dataUrl.Substring(i + 7));
+                if (copy)
+                {
+                    using (MemoryStream ms = new MemoryStream(png))
+                    using (Image img = Image.FromStream(ms))
+                    {
+                        DataObject d = new DataObject();
+                        d.SetImage(img);
+                        d.SetData("PNG", false, new MemoryStream(png));   // keeps quality in apps that read png
+                        Clipboard.SetDataObject(d, true);
+                    }
+                    Post(new { type = "toast", text = "copied, paste it anywhere" });
+                    return;
+                }
+                using (SaveFileDialog f = new SaveFileDialog())
+                {
+                    f.Title = "save wrapped";
+                    f.Filter = "png image (*.png)|*.png";
+                    f.FileName = Regex.Replace(string.IsNullOrEmpty(name) ? "muzika-wrapped" : name, "[^\\w.-]+", "-") + ".png";
+                    if (f.ShowDialog(this) != DialogResult.OK) return;
+                    File.WriteAllBytes(f.FileName, png);
+                    Post(new { type = "toast", text = "saved" });
+                }
+            }
+            catch (Exception ex) { Post(new { type = "toast", text = "couldn't save: " + ex.Message }); }
         }
 
         // ---------- fullscreen: the whole monitor, taskbar included ----------
@@ -972,6 +1006,8 @@ namespace Emopunk
             else if (cmd == "backupExport") { string ls = Str(m, "ls"); BeginInvoke((MethodInvoker)delegate { BackupExport(ls); }); }
             else if (cmd == "backupImport") BeginInvoke((MethodInvoker)BackupImport);
             else if (cmd == "fs") SetFullscreen(Str(m, "on") == "True");
+            else if (cmd == "saveImage") { string dt = Str(m, "data"), nm = Str(m, "name"); BeginInvoke((MethodInvoker)delegate { SaveImage(dt, nm, false); }); }
+            else if (cmd == "copyImage") { string dt = Str(m, "data"); BeginInvoke((MethodInvoker)delegate { SaveImage(dt, null, true); }); }
             else if (cmd == "updCfg") upd.Configure(Str(m, "repo"), Str(m, "auto") == "True");
             else if (cmd == "updApply") BeginInvoke((MethodInvoker)ApplyUpdate);
             else if (cmd == "importData") BeginInvoke((MethodInvoker)ImportData);
@@ -1197,6 +1233,14 @@ namespace Emopunk
         public double[] hours { get; set; }
         public double total { get; set; }
         public double[] week { get; set; }      // 7 x 24: [weekday * 24 + hour], sunday = 0
+        public Dictionary<string, MonthStat> months { get; set; }   // "2026-11" -> what was listened that month (wrapped)
+    }
+
+    class MonthStat
+    {
+        public Dictionary<string, double> tracks { get; set; }
+        public double[] hours { get; set; }
+        public double total { get; set; }
     }
 
     class Library
@@ -1257,6 +1301,7 @@ namespace Emopunk
             }
             catch { }
             if (!haveStats && history.Count > 0) SeedStats();
+            if (stats.months == null) SeedMonths();
         }
 
         void WriteJson(string path, object o)
@@ -1271,6 +1316,33 @@ namespace Emopunk
             catch { }
         }
         void Save() { WriteJson(file, tracks); }
+
+        MonthStat Month(string key)
+        {
+            if (stats.months == null) stats.months = new Dictionary<string, MonthStat>();
+            MonthStat mo;
+            if (!stats.months.TryGetValue(key, out mo) || mo == null) { mo = new MonthStat(); stats.months[key] = mo; }
+            if (mo.tracks == null) mo.tracks = new Dictionary<string, double>();
+            if (mo.hours == null || mo.hours.Length != 24) mo.hours = new double[24];
+            return mo;
+        }
+
+        // months are new: rebuild them roughly from the play history
+        void SeedMonths()
+        {
+            stats.months = new Dictionary<string, MonthStat>();
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            foreach (Hist h in history)
+            {
+                Track t = Find(h.id);
+                double sec = t != null && t.dur > 0 ? Math.Min(t.dur, 600) : 150;
+                DateTime d = epoch.AddMilliseconds(h.t).ToLocalTime();
+                MonthStat mo = Month(d.ToString("yyyy-MM"));
+                double v; mo.tracks.TryGetValue(h.id, out v); mo.tracks[h.id] = v + sec;
+                mo.hours[d.Hour] += sec; mo.total += sec;
+            }
+            WriteJson(statsFile, stats);
+        }
 
         // the weekday map is new: rebuild it roughly from the play history
         void SeedWeek()
@@ -1322,6 +1394,9 @@ namespace Emopunk
                 if (DateTime.TryParseExact(day, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dd))
                     stats.week[(int)dd.DayOfWeek * 24 + hour] += sec;
                 stats.total += sec;
+                MonthStat mo = Month(day.Substring(0, 7));
+                double mv; mo.tracks.TryGetValue(id ?? "", out mv); mo.tracks[id ?? ""] = mv + sec;
+                mo.hours[hour] += sec; mo.total += sec;
                 WriteJson(statsFile, stats);
                 if ((DateTime.Now - lastSave).TotalSeconds > 60) { Save(); lastSave = DateTime.Now; }
             }
@@ -1429,7 +1504,7 @@ namespace Emopunk
         {
             lock (gate)
             {
-                long since = Program.Now() - 9L * 86400000L;
+                long since = Program.Now() - 31L * 86400000L;
                 return new
                 {
                     type = "library",

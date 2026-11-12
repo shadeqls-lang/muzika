@@ -1,14 +1,22 @@
-## fixes
-- updates no longer depend on the github api. it has a limit per ip, and on shared or vpn connections it runs out, so muzika couldn't see new versions ("404"). now it reads the latest release straight from github.com
+## new in 0.4.2
+- **wrapped**: stats → "your month, wrapped". one picture with your hours, best day, peak hour, top track, top tracks and artists. save it or copy it and paste anywhere. older months are there too
+- **history**: library → history. everything you played in the last 30 days, newest first, so the track from radio is never lost
+- **color mode**: the switch in the player now also tints muzika with the color of the cover that is playing. off keeps everything black and white
 
-## in 0.4.0
-- **likes are one list**: the heart in muzika is a like. muzika keeps its own likes (soundcloud refuses likes from apps), and library → likes shows them together with your soundcloud likes, newest first
-- un-hearting a soundcloud like hides it from likes in muzika
-- **covers view**: library can show tracks as a list or as covers, like on soundcloud. the switch is next to the tabs
-- **update screen**: after an update the new version number builds itself and the notes follow, like this
+## 0.4.1
+- updates read the latest release straight from github.com. the github api has a limit per ip and on shared or vpn connections muzika couldn't see new versions
 
-## 0.4.0 fixes
-- library opens with the right tab lit, and tabs switch instantly: what they loaded is kept and refreshed quietly
-- "what's new" always works, the notes ship inside the app
-- settings are grouped into look, playback and app, cards line up without gaps
-- spacing cleaned up across pages
+## 0.4.0
+- **likes are one list**: the heart in muzika is a like. muzika keeps its own (soundcloud refuses likes from apps) and shows them with your soundcloud likes, newest first
+- **covers view**: library as a list or as covers, like on soundcloud
+- **this screen**: after an update the version builds itself and the notes follow
+- library tabs switch instantly, settings grouped into look, playback and app, spacing cleaned up everywhere
+
+## 0.3.0
+- **fullscreen**: big cover, visualizer and track name. F11, the button in the player or double-click the cover
+- **when you listen**: a week map, day by hour, in stats
+- **backup**: one .muzika file with likes, playlists, stats and settings, never the login
+- updates check once at launch and install right on the loading screen, which shows what is really loading
+
+## 0.2.0
+- **radio** from any track, muzika playlists with the + button, streaming that starts in a moment, crossfade without clicks, automatic updates
