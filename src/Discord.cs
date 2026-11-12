@@ -19,7 +19,7 @@ namespace Emopunk
 
         // wanted state (set from the UI thread)
         // muzika's own discord application: nothing to set up, just switch it on
-        public const string DefaultAppId = "";
+        public const string DefaultAppId = "1569120327508951060";
         public const string DefaultGif = "https://raw.githubusercontent.com/shadeqls-lang/muzika/main/assets/rpc.gif";
         bool enabled; string appId = "", gif = "", art = "", url = "", aurl = "";
         string title = "", artist = ""; bool playing; double pos, dur; DateTime posAt = DateTime.UtcNow;
