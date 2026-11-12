@@ -797,7 +797,10 @@ namespace Emopunk
         // notes of any released version (settings, "what's new")
         public string FetchNotes(string ver)
         {
-            string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/tags/v" + Regex.Replace(ver ?? "", "^[vV]", ""));
+            ver = Regex.Replace(ver ?? "", "^[vV]", "");
+            try { return Net.Get("https://raw.githubusercontent.com/" + Repo + "/v" + ver + "/notes.md"); }
+            catch (Exception ex) { Log.Write("notes (raw): " + ex.Message); }
+            string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/tags/v" + ver);
             Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(rel) as Dictionary<string, object>;
             object b; return d != null && d.TryGetValue("body", out b) && b != null ? b.ToString() : "";
         }
@@ -813,7 +816,19 @@ namespace Emopunk
                 if (Ready) { State("ready", NewVersion, 1); return; }
                 State("checking", null, 0);
                 string ver = null, url = null, notes = null;
+                // 1. github.com itself: /releases/latest redirects to the newest tag. no api, no rate limit
                 try
+                {
+                    string tag = LatestTag();
+                    if (tag != null)
+                    {
+                        ver = tag; url = "https://github.com/" + Repo + "/releases/download/" + tag + "/muzika.exe";
+                        try { notes = Net.Get("https://raw.githubusercontent.com/" + Repo + "/" + tag + "/notes.md"); } catch { }
+                    }
+                }
+                catch (Exception ex) { Log.Write("update (github.com): " + ex.Message); }
+                // 2. the api (60 requests an hour per ip, shared ips run out)
+                if (url == null) try
                 {
                     string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/latest");
                     Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(rel) as Dictionary<string, object>;
@@ -828,14 +843,15 @@ namespace Emopunk
                             { ver = tag.ToString(); url = u.ToString(); break; }
                         }
                 }
-                catch { }
+                catch (Exception ex) { Log.Write("update (api): " + ex.Message); }
+                // 3. version.txt in the repo, exe from that version's release
                 if (url == null)
                     foreach (string br in new[] { "main", "master" })
                     {
                         try
                         {
                             string v = Net.Get("https://raw.githubusercontent.com/" + Repo + "/" + br + "/version.txt").Trim();
-                            if (Parse(v).Length > 0) { ver = v; url = "https://raw.githubusercontent.com/" + Repo + "/" + br + "/muzika.exe"; break; }
+                            if (Parse(v).Length > 0) { ver = v; url = "https://github.com/" + Repo + "/releases/download/v" + Regex.Replace(v, "^[vV]", "") + "/muzika.exe"; break; }
                         }
                         catch { }
                     }
@@ -855,6 +871,18 @@ namespace Emopunk
             }
             catch (Exception ex) { Log.Write("update: " + ex.Message); State("error", ex.Message, 0); }
             finally { Interlocked.Exchange(ref busy, 0); }
+        }
+
+        string LatestTag()
+        {
+            HttpWebRequest r = (HttpWebRequest)WebRequest.Create("https://github.com/" + Repo + "/releases/latest");
+            r.AllowAutoRedirect = false; r.UserAgent = Net.UA; r.Timeout = 15000; r.ReadWriteTimeout = 15000;
+            using (HttpWebResponse resp = (HttpWebResponse)r.GetResponse())
+            {
+                string loc = resp.Headers["Location"] ?? "";
+                Match m = Regex.Match(loc, "/releases/tag/([^/?#]+)");
+                return m.Success ? Uri.UnescapeDataString(m.Groups[1].Value) : null;
+            }
         }
 
         // a running exe can be renamed on windows: old one steps aside, new one takes its name
