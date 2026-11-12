@@ -657,6 +657,30 @@ body:not(.color) .banner,body:not(.color) .scuav{filter:grayscale(1) contrast(1.
 .scubtn{display:flex;gap:8px;margin-top:18px}
 .scubody{min-height:0;display:flex;flex-direction:column}
 .scubody .ptool{padding:0 0 14px}
+.scul{flex:0 1 auto;min-height:0}
+/* under the tracks: what the numbers say about them */
+.shelf{flex:1 0 clamp(200px,27vh,270px);min-height:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;margin-top:14px}
+.shelf:empty{display:none}
+.shelf .sc{display:flex;flex-direction:column;min-height:0;padding:16px 18px;border-radius:20px;background:rgba(var(--fg),.035);box-shadow:inset 0 0 0 1px rgba(var(--fg),.08);overflow:hidden}
+.shelf .sc>.lbl{display:flex;justify-content:space-between;gap:10px}
+.shelf .big{font-size:clamp(30px,4.4vh,46px);font-weight:200;font-style:italic;letter-spacing:-.04em;color:var(--ink);line-height:1;margin-top:12px}
+.shelf .sub{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.5}
+.shelf .tl{flex:1;min-height:40px;display:flex;align-items:flex-end;gap:3px;margin-top:14px}
+.shelf .tl i{flex:1;min-height:2px;border-radius:2px 2px 0 0;background:rgba(var(--fg),.16);transition:background .2s}
+.shelf .tl i.pk{background:var(--acc)}
+.shelf .tl i:hover{background:rgba(var(--fg),.5)}
+.shelf .ax{display:flex;justify-content:space-between;font-size:10px;color:var(--dim2);margin-top:6px}
+.shelf .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;align-content:flex-start}
+.shelf .tags span{font-size:11px;padding:5px 10px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(var(--fg),.14);color:var(--txt)}
+.shelf .tags span b{color:var(--ink);font-weight:600;margin-left:5px}
+.shelf .hl{margin-top:auto;padding-top:14px;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;cursor:pointer}
+.shelf .hl i{width:40px;height:40px;border-radius:5px;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.08)}
+body:not(.color) .shelf .hl i{filter:grayscale(1)}
+.shelf .hl .t{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf .hl .a{font-size:11px;color:var(--dim)}
+.shelf .hl:hover .t{text-decoration:underline}
+.shelf .go2{margin-top:auto;align-self:flex-start}
+@media (max-height:760px){ .shelf{display:none} }
 #scuList{overflow:auto;height:100%;padding:6px 0;scrollbar-width:thin;scrollbar-color:var(--dim2) transparent}
 .ulink{cursor:pointer}
 .ulink:hover{color:var(--ink);text-decoration:underline}
@@ -1031,7 +1055,8 @@ body[data-theme=paper] .giant{color:var(--ink)}
       <div class="seg" id="scuSeg" style="grid-template-columns:repeat(4,1fr);width:360px"><div class="knob"></div><button data-v="tracks">tracks</button><button data-v="likes">likes</button><button data-v="playlists">playlists</button><button data-v="reposts">reposts</button></div>
       <div class="seg vseg" id="scuView" style="grid-template-columns:repeat(2,1fr);width:84px"><div class="knob"></div><button data-v="list" title="list"><svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h16v2H4z"/></svg></button><button data-v="grid" title="covers"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button></div>
     </div>
-    <div class="listw lg" style="flex:1;min-height:0"><div class="slist" id="scuList"></div></div>
+    <div class="listw lg scul"><div class="slist" id="scuList"></div></div>
+    <div class="shelf" id="scuShelf"></div>
   </div>
 </section>
 
@@ -1652,7 +1677,8 @@ function sizeViz(){
 const NB=64;
 const WN=512; let wave=null;
 function mkSig(){ return {b:new Float32Array(NB),w:new Float32Array(WN),bass:0,mid:0,high:0,energy:0,avg:.2,beat:false,lastBeat:0,t:0,dt:0,live:false,
-  low:0,lowAvg:.2,lowVar:.01,prevLow:0,kick:0}; }
+  low:0,lowAvg:.2,lowVar:.01,prevLow:0,kick:0,
+  PF:new Float32Array(256),fa:[.01,.01,.01],last:[0,0,0],on:[0,0,0],hit:[0,0,0],rms:0,rmsAvg:.1,lv:0}; }
 const SIG=mkSig();
 function readSig(S,t,dt,live,fake){
   const B=S.b;
@@ -1675,13 +1701,28 @@ function readSig(S,t,dt,live,fake){
   a=0; for(let i=30;i<60;i++) a+=B[i]; S.high=a/30;
   S.energy+=(S.bass-S.energy)*Math.min(1,dt*10);
   S.avg+=(S.bass-S.avg)*Math.min(1,dt*1.6);
-  S.beat=false;
-  if((live||fake)&&lo>.3&&dev>Math.max(.07,Math.sqrt(S.lowVar)*1.35)&&rise>.025&&t-S.lastBeat>260){
-    S.beat=true; S.lastBeat=t; S.kick=Math.min(1,.55+dev*2.6); }
+  // onsets per region from the raw spectrum: low = kicks and 808s, mid = claps and snares, high = hats.
+  // each region keeps its own running level, so a wall of bass still shows every new hit on top of it
+  const fx=[0,0,0];
+  if(live){ const PF=S.PF; for(let k=1;k<200;k++){ const v=freq[k], d=v-PF[k]; PF[k]=v; if(d>0){ if(k<7) fx[0]+=d; else if(k<46) fx[1]+=d; else fx[2]+=d; } }
+    fx[0]/=6*255; fx[1]/=39*255; fx[2]/=154*255; }
+  else if(fake){ const b=(t/500)%1, c2=((t/500)+.5)%1; fx[0]=b<.07?.5:.01; fx[1]=c2<.06?.22:.005; fx[2]=((t/125)%1)<.1?.08:.003; }
+  S.beat=false; S.clap=false; S.hat=false;
+  const gap=[150,110,70], mult=[1.45,1.6,1.8], floorF=[.035,.018,.01];
+  for(let r=0;r<3;r++){
+    S.hit[r]*=Math.exp(-dt*(r?9:6));
+    const f=fx[r], thr=Math.max(floorF[r],S.fa[r]*mult[r]);
+    if((live||fake)&&f>thr&&t-S.last[r]>gap[r]){ const str=Math.min(1,.45+(f-thr)/(thr+.02)*.5); S.last[r]=t; S.hit[r]=Math.max(S.hit[r],str);
+      if(r===0){ S.beat=true; S.lastBeat=t; S.kick=Math.max(S.kick,str); } else if(r===1) S.clap=true; else S.hat=true; S.on[r]=str; } else S.on[r]=0;
+    S.fa[r]+=(f-S.fa[r])*Math.min(1,dt*(f>S.fa[r]?2.5:4));
+  }
   if(!live&&!fake&&t-S.lastBeat>1600){ S.beat=true; S.lastBeat=t; S.kick=.35; }     // a slow breath when nothing plays
-  // the waveform, for the scopes
+  // the waveform, for the scopes, and a fast loudness from it (what makes lissajous feel the whole track)
   if(live&&wave){ analyser.getByteTimeDomainData(wave); for(let i=0;i<WN;i++) S.w[i]+=((wave[i]-128)/128-S.w[i])*.85; }
   else for(let i=0;i<WN;i++){ const x=i/WN; S.w[i]=(fake?.5:.12)*(Math.sin(x*Math.PI*6+t/90)*.6+Math.sin(x*Math.PI*17+t/40)*.25*(S.kick+.3)+Math.sin(x*Math.PI*41-t/25)*.1); }
+  let ms=0; for(let i=0;i<WN;i+=2) ms+=S.w[i]*S.w[i]; const rms=Math.sqrt(ms/(WN/2));
+  S.rms+=(rms-S.rms)*Math.min(1,dt*(rms>S.rms?30:8)); S.rmsAvg+=(S.rms-S.rmsAvg)*Math.min(1,dt*.5);
+  S.lv=Math.max(0,Math.min(1.6,S.rms/(S.rmsAvg+.03)-.55));        // loudness against the track's own level: 0 calm, ~1 normal, more on peaks
   S.t=t; S.dt=dt; S.live=live;
 }
 const band=(S,x)=>S.b[Math.max(0,Math.min(NB-1,Math.floor(x*(NB-1))))];
@@ -1729,15 +1770,17 @@ const VZS={
   pulse:{name:"pulse",make(){
     const rings=[]; let seed=1;
     return {draw(c,S,cc,G,sz,W,H){
-      if(S.beat) rings.push({r:cc.half*1.1,life:1,seed:seed++,k:.7+S.kick*1.1,amp:.06+S.kick*.16});
-      if(rings.length>9) rings.shift();
+      if(S.beat) rings.push({r:cc.half*1.1,life:1,seed:seed++,k:.7+S.on[0]*1.2,amp:.06+S.on[0]*.18});
+      if(S.clap) rings.push({r:cc.half*1.1,life:.7,seed:seed++,k:1.5+S.on[1],amp:.03});
+      if(rings.length>14) rings.shift();
+
       const far=Math.hypot(W,H)*.6;
       const ring=(rad,life,sd,amp)=>{ const n=Math.max(24,Math.floor(rad*2*Math.PI/(G*2.2)));
         for(let k=0;k<n;k++){ if(hash(sd,k)>life) continue; const a=k/n*Math.PI*2, m=Math.abs(((a/(Math.PI*2))+.25)%1-.5)*2;
           const rr=rad*(1+band(S,m*.9)*amp); c.rect(Math.round((cc.x+Math.cos(a)*rr)/G)*G,Math.round((cc.y+Math.sin(a)*rr)/G)*G,sz,sz); } };
       for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.r+=cc.half*2.6*S.dt*g.k*(.6+g.life*.7); g.life-=S.dt*.5;
         if(g.life<=0||g.r>far){ rings.splice(i,1); continue; } ring(g.r,g.life*.95,g.seed,g.amp*g.life); }
-      ring(cc.half*(1.12+S.kick*.1),.7,0,.025);
+      ring(cc.half*(1.12+S.hit[0]*.1+S.lv*.03),.55+S.lv*.25,0,.02+S.lv*.03);
     }};
   }},
   // unknown-pleasures lines rolling toward you from under the cover
@@ -1772,13 +1815,13 @@ const VZS={
       if(k!==key){ key=k; P=[]; const maxD=Math.hypot(Math.max(cc.x,W-cc.x),Math.max(cc.y,H-cc.y));
         for(let y=sp/2;y<H;y+=sp) for(let x=sp/2;x<W;x+=sp){ if(Math.abs(x-cc.x)<cc.half*1.08&&Math.abs(y-cc.y)<cc.half*1.08) continue;
           const d=Math.hypot(x-cc.x,y-cc.y)/maxD; P.push(x,y,d,Math.random()); } P.maxD=maxD; }
-      if(S.beat) waves.push({r:0,life:.5+S.kick*.6}); if(waves.length>4) waves.shift();
-      for(let i=waves.length-1;i>=0;i--){ const w=waves[i]; w.r+=S.dt*.55; w.life-=S.dt*.6; if(w.life<=0) waves.splice(i,1); }
+      if(S.beat) waves.push({r:0,life:.5+S.on[0]*.6,v:.55}); if(S.clap) waves.push({r:.04,life:.45,v:.9}); if(waves.length>6) waves.shift();
+      for(let i=waves.length-1;i>=0;i--){ const w=waves[i]; w.r+=S.dt*w.v; w.life-=S.dt*.7; if(w.life<=0) waves.splice(i,1); }
       // faint grid first, then the lit dots on top
       c.fill(); c.globalAlpha=.06; c.beginPath(); const s1=Math.max(1,Math.round(sz*.75));
       for(let i=0;i<P.length;i+=4) c.rect(Math.round(P[i]),Math.round(P[i+1]),s1,s1);
       c.fill(); c.globalAlpha=1; c.beginPath();
-      for(let i=0;i<P.length;i+=4){ const d=P[i+2]; if(d>.78) continue; let I=Math.max(0,band(S,Math.min(1,d*1.4))-.18)*(1-d*1.1)*.9+S.kick*Math.max(0,.45-d)*.9;
+      for(let i=0;i<P.length;i+=4){ const d=P[i+2]; if(d>.78) continue; let I=band(S,Math.min(1,d*1.4))*(.35+S.lv*.6)*(1-d*1.05)+S.hit[0]*Math.max(0,.4-d)*1.1+(S.hat&&P[i+3]>.93?.5:0);
         for(const w of waves){ const q=(d-w.r)/.04; I+=Math.exp(-q*q)*w.life; }
         if(I<=P[i+3]*.85+.14) continue;
         const z=I>.8?sz*2.2:I>.5?sz*1.6:sz; const zz=Math.max(1,Math.round(z)); c.rect(Math.round(P[i]-zz/2),Math.round(P[i+1]-zz/2),zz,zz); }
@@ -1831,7 +1874,7 @@ const VZS={
     const spawn=i=>{ const a=Math.random()*Math.PI*2, r=.12+Math.random()*.95; X[i]=Math.cos(a)*r; Y[i]=Math.sin(a)*r; Z[i]=.2+Math.random()*.8; PZ[i]=Z[i]; };
     for(let i=0;i<N;i++) spawn(i);
     return {draw(c,S,cc,G,sz,W,H){
-      const sp=(.05+S.energy*.25+S.kick*1.4)*S.dt, F=Math.max(W,H)*.32;
+      const sp=(.04+S.lv*.32+S.hit[0]*1.5+S.hit[1]*.7+S.hit[2]*.2)*S.dt, F=Math.max(W,H)*.32;
       for(let i=0;i<N;i++){
         PZ[i]=Z[i]; Z[i]-=sp; if(Z[i]<=.02){ spawn(i); Z[i]=1; PZ[i]=1; continue; }
         const x=cc.x+X[i]/Z[i]*F, y=cc.y+Y[i]/Z[i]*F; if(x<0||y<0||x>W||y>H){ spawn(i); Z[i]=1; PZ[i]=1; continue; }
@@ -2063,7 +2106,8 @@ function scItem(t){
   if(!t||t.kind&&t.kind!=="track") return null;
   const u=t.user||{};
   return {id:String(t.id),stub:!t.title,title:t.title||"",artist:u.username||"",dur:(t.full_duration||t.duration||0)/1000,plays:t.playback_count||0,
-    url:t.permalink_url||"",auth:t.track_authorization||"",tc:pickTc(t),art:IMG(t.artwork_url||u.avatar_url||""),big:IMG((t.artwork_url||u.avatar_url||"").replace("-large.","-t500x500.")),snip:t.policy==="SNIP",uid:u.id?String(u.id):""};
+    url:t.permalink_url||"",auth:t.track_authorization||"",tc:pickTc(t),art:IMG(t.artwork_url||u.avatar_url||""),big:IMG((t.artwork_url||u.avatar_url||"").replace("-large.","-t500x500.")),snip:t.policy==="SNIP",uid:u.id?String(u.id):"",
+    date:(t.release_date||t.display_date||t.created_at||"").slice(0,10),genre:(t.genre||"").toLowerCase().trim(),likes:t.likes_count||t.favoritings_count||0};
 }
 function scPlItem(p){ if(!p) return null; return {pl:true,id:String(p.id),title:p.title||"playlist",artist:(p.user||{}).username||"",uid:(p.user||{}).id?String(p.user.id):"",count:p.track_count||(p.tracks||[]).length,
   art:IMG(p.artwork_url||((p.tracks||[]).find(x=>x&&x.artwork_url)||{}).artwork_url||"")}; }
@@ -2230,6 +2274,7 @@ function renderSc(){
   box.innerHTML=items.map(gridOn()?scTileHtml:scRowHtml).join("")+moreBtn;
   box.scrollTop=st;
   const nt=all.filter(x=>!x.pl).length, np=all.length-nt;
+  if(curView==="scu"&&SU.tab==="tracks"&&SC.kind==="usertracks"){ SU.trk=all.filter(x=>!x.pl); renderShelf(); }
   if(SC.kind==="hist") return setCount(nt+" tracks, last 30 days");
   setCount((nt?nt+(SC.next?"+":"")+" tracks":"")+(np?(nt?" · ":"")+np+" playlists":""));
 }
@@ -2298,18 +2343,61 @@ function openScUser(id,refresh){
   send({cmd:"scUser",id:SU.id,req:SU.req});
   scUserTab("tracks");
 }
-function scUserTab(what){ SU.tab=what; SU.show=12; $("#scuLbl").textContent=what; scBusy(); send({cmd:"scUserList",id:SU.id,what,req:SC.req}); }
+function scUserTab(what){ SU.tab=what; SU.show=12; if(what==="tracks"){ SU.trk=null; renderShelf(); } $("#scuLbl").textContent=what; scBusy(); send({cmd:"scUserList",id:SU.id,what,req:SC.req}); }
 $("#scuView").onclick=e=>{ const b=e.target.closest("button"); if(!b||b.dataset.v===LIB.view) return; LIB.view=b.dataset.v; store.set("libView",LIB.view); segTo($("#scuView"),b); scBox().scrollTop=0; renderSc(); };
 $("#scuSeg").onclick=e=>{ const b=e.target.closest("button"); if(!b||b.dataset.v===SU.tab) return; segTo($("#scuSeg"),b); scUserTab(b.dataset.v); };
 $("#scuOpen").onclick=()=>{ if(SU.user&&SU.user.permalink_url) send({cmd:"open",url:SU.user.permalink_url}); };
 $("#scuBio").onclick=()=>$("#scuBio").classList.toggle("open");
+// three cards under the tracks: when they drop, what they sound like, and you with them
+function renderShelf(){
+  const box=$("#scuShelf"); if(!box) return;
+  const u=SU.user, list=SU.trk||[], me=SU.id==="me";
+  if(!u){ box.innerHTML=""; return; }
+  const MS=MON.map(x=>x.slice(0,3).toLowerCase());
+  // 1. uploads over the last 24 months
+  const now=new Date(), months=[]; for(let i=23;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push({k:d.getFullYear()+"-"+pad2(d.getMonth()+1),d,n:0}); }
+  const byK={}; months.forEach(m=>byK[m.k]=m); let older=0;
+  for(const t of list){ const k=(t.date||"").slice(0,7); if(byK[k]) byK[k].n++; else if(k) older++; }
+  const mx=Math.max(1,...months.map(m=>m.n)), pk=months.reduce((a,m)=>m.n>a.n?m:a,months[0]);
+  const lastT=list.filter(t=>t.date).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const ago=lastT?Math.floor((Date.now()-new Date(lastT.date+"T12:00:00"))/86400000):-1;
+  const c1=`<div class="sc"><span class="lbl"><span>${me?"your uploads":"when they drop"}</span><span>last 2 years</span></span>
+    <div class="big">${ago<0?"–":ago===0?"today":ago===1?"yesterday":ago<60?ago+" days":Math.round(ago/30)+" months"}</div>
+    <div class="sub">${ago<0?"no uploads found":"since the last upload"}${pk.n?` · busiest: ${MS[pk.d.getMonth()]} ${pk.d.getFullYear()}`:""}${older?` · ${older} older`:""}</div>
+    <div class="tl">${months.map(m=>`<i class="${m===pk&&m.n?"pk":""}" style="height:${Math.max(3,m.n/mx*100)}%" title="${MS[m.d.getMonth()]} ${m.d.getFullYear()}: ${m.n} track${m.n===1?"":"s"}"></i>`).join("")}</div>
+    <div class="ax"><span>${MS[months[0].d.getMonth()]} ${String(months[0].d.getFullYear()).slice(2)}</span><span>now</span></div></div>`;
+  // 2. their sound: genres, length, reach
+  const g={}; for(const t of list) if(t.genre) g[t.genre]=(g[t.genre]||0)+1;
+  const gs=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,6), plays=list.reduce((a,t)=>a+(t.plays||0),0);
+  const avg=list.length?list.reduce((a,t)=>a+(t.dur||0),0)/list.length:0, top=list.slice().sort((a,b)=>(b.plays||0)-(a.plays||0))[0];
+  const c2=`<div class="sc"><span class="lbl"><span>their sound</span><span>${list.length} tracks</span></span>
+    <div class="big">${fmtN(plays)}</div><div class="sub">plays across these tracks · ${avg?fmt(avg)+" average":""}</div>
+    <div class="tags">${gs.length?gs.map(([k,n])=>`<span>${esc(k)}<b>${n}</b></span>`).join(""):'<span>no genres given</span>'}</div>
+    ${top?`<div class="hl" data-id="${top.id}"><i style="${top.art?`background-image:url('${top.art}')`:""}"></i><div style="min-width:0"><div class="t">${esc(top.title)}</div><div class="a">most played · ${fmtN(top.plays)}</div></div></div>`:""}</div>`;
+  // 3. you and them (or you this month, on your own profile)
+  let c3;
+  if(me){ const mk=dayKey(new Date()).slice(0,7), mo=(stats.months||{})[mk]||{total:0}, [st]=streaks();
+    c3=`<div class="sc"><span class="lbl"><span>you in muzika</span><span>${MON[new Date().getMonth()].toLowerCase()}</span></span>
+      <div class="big">${hm(mo.total||0)}</div><div class="sub">listened this month · ${st} day streak · ${MZ.saved.length} muzika likes</div>
+      <button class="ghost go2" id="shWr">your month, wrapped</button></div>`; }
+  else { const mine=tracks.filter(t=>t.sc&&(String(t.uid||"")===String(u.id)||(t.artist||"").toLowerCase()===(u.username||"").toLowerCase()));
+    const sec=mine.reduce((a,t)=>a+(t.secs||0),0), pl=mine.reduce((a,t)=>a+(t.plays||0),0), lst=mine.reduce((a,t)=>Math.max(a,t.last||0),0);
+    c3=`<div class="sc"><span class="lbl"><span>you and them</span><span>${mine.length?mine.length+" tracks heard":""}</span></span>
+      <div class="big">${sec>=60?hm(sec):"–"}</div><div class="sub">${sec>=60?`${pl} plays · last ${ago_(lst)}`:"you haven't really listened yet"}</div>
+      ${top?`<button class="ghost go2" id="shRad">radio from their top track</button>`:""}</div>`; }
+  box.innerHTML=c1+c2+c3;
+  const r=$("#shRad"); if(r) r.onclick=()=>{ if(top) startRadio(top); };
+  const w=$("#shWr"); if(w) w.onclick=()=>{ go("stats"); setTimeout(openWrapped,80); };
+  const h=box.querySelector(".hl"); if(h) h.onclick=()=>{ if(top) scPlayFrom(top); };
+}
+function ago_(ts){ if(!ts) return "never"; const d=Math.floor((Date.now()-ts)/86400000); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
 // the name takes the biggest size that still fits the column
 function fitName(){ const h=$("#scuName"); if(!h) return; let z=56; h.style.fontSize=z+"px";
   requestAnimationFrame(()=>{ while(z>24&&h.scrollWidth>h.clientWidth+1){ z-=2; h.style.fontSize=z+"px"; } }); }
 function renderScu(){
   const u=SU.user;
   $("#scuOpen").hidden=!u;
-  if(!u){ $("#scuMe").innerHTML=""; $("#scuName").textContent=SU.id==="me"&&!SC.me?"your profile":"…"; $("#scuSub").textContent=""; $("#scuStats").innerHTML=""; $("#scuBio").textContent=""; $("#scuBan").style.backgroundImage=`url('${ASSET("disc.jpg")}')`; $("#scuAv").style.backgroundImage=""; return; }
+  if(!u){ $("#scuMe").innerHTML=""; $("#scuShelf").innerHTML=""; $("#scuName").textContent=SU.id==="me"&&!SC.me?"your profile":"…"; $("#scuSub").textContent=""; $("#scuStats").innerHTML=""; $("#scuBio").textContent=""; $("#scuBan").style.backgroundImage=`url('${ASSET("disc.jpg")}')`; $("#scuAv").style.backgroundImage=""; return; }
   const ban=u.visuals&&u.visuals.visuals&&u.visuals.visuals[0]&&u.visuals.visuals[0].visual_url;
   $("#scuBan").style.backgroundImage=ban?`url('${IMG(ban)}')`:`url('${ASSET("disc.jpg")}')`;
   $("#scuAv").style.backgroundImage=u.avatar_url?`url('${IMG(u.avatar_url.replace("-large.","-t500x500."))}')`:"";
@@ -2318,7 +2406,7 @@ function renderScu(){
   const st=[[u.followers_count,"followers"],[u.followings_count,"following"],[u.track_count,"tracks"],[u.likes_count||u.public_favorites_count,"likes"],[u.playlist_count,"playlists"]];
   $("#scuStats").innerHTML=st.filter(x=>x[0]!=null).map(([n,l])=>`<div class="st"><b class="it">${fmtN(n)}</b><span>${l}</span></div>`).join("");
   $("#scuTag").textContent=SU.id==="me"?"your profile":"artist";
-  $("#scuBio").textContent=(u.description||"").trim();
+  $("#scuBio").textContent=(u.description||"").trim(); renderShelf();
   // what you have listened to from them, from your own stats
   const mine=tracks.filter(t=>t.sc&&(t.uid&&String(t.uid)===String(u.id)||(t.artist||"").toLowerCase()===(u.username||"").toLowerCase()));
   const sec=mine.reduce((a,t)=>a+(t.secs||0),0), pl=mine.reduce((a,t)=>a+(t.plays||0),0);
@@ -2773,9 +2861,9 @@ const DG=(function(){
   function react(S){
     if(!on||!visible()||!P.length) return;
     const now=performance.now(); if(now-lastReact<20) return; lastReact=now;
-    if(S.beat){ const kk=S.kick*(260+Math.random()*80);
+    if(S.beat||S.clap){ const kk=(S.beat?S.on[0]*300:S.on[1]*160)+Math.random()*60;
       for(const p of P){ const dx=p.tx-p.cx, dy=p.ty-p.cy, d=Math.hypot(dx,dy)||1, f=.45+hash(p.tx,p.ty)*.9; p.vx+=dx/d*kk*f; p.vy+=dy/d*kk*f; } }
-    const j=Math.max(0,S.high-.2)*55;
+    const j=(S.hat?40:0)+Math.max(0,S.lv-.6)*60;
     if(j>0) for(const p of P){ if(Math.random()<.05){ p.vx+=(Math.random()-.5)*j; p.vy+=(Math.random()-.5)*j; } }
     go();
   }

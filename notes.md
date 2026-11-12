@@ -1,4 +1,12 @@
-## new in 0.5.1
+## new in 0.5.2
+- **visualizers hear more**: muzika now listens to three parts of the sound on their own. kicks and 808s in the low end, claps and snares in the middle, hats on top. each keeps its own level, so a wall of bass still shows every new hit, and claps are caught on their own
+- **starfield** speeds up with the loudness every moment and jumps on kicks and claps
+- **pulse** sends a big ring on kicks and a thin fast ring on claps
+- **dot field** glows with the track, waves on kicks and claps, sparkles on hats
+- **reactive letters** blow apart on kicks, snap on claps, shiver on hats
+- **profiles**: under the tracks, three cards. when they drop (uploads over two years, days since the last one), their sound (plays, genres, average length, the most played track) and you and them (your time with them, radio from their top track). on your own profile: your month in muzika with a shortcut to wrapped
+
+## 0.5.1
 - **six more styles**: orbit, starfield, rain, scope, lissajous and reactive letters
 - **orbit**: rings of dots circle the cover, bass swells them, highs spin them, kicks throw them out
 - **starfield**: you fly through stars coming out of the cover, every kick is a jump forward
