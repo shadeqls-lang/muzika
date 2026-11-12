@@ -35,7 +35,7 @@ body::after{content:"";position:fixed;inset:-50%;z-index:100;pointer-events:none
 .it{font-style:italic;font-weight:200;letter-spacing:-.04em}
 
 /* ---------- background film ---------- */
-#bgv{position:fixed;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;opacity:.36;transform:scale(calc(1.05 + var(--sp,0)*.25));transform-origin:50% 30%;filter:contrast(1.15)}
+#bgv{position:fixed;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;opacity:.5;transform:scale(calc(1.2 + var(--sp,0)*.25));transform-origin:50% 30%;filter:blur(26px) contrast(1.35) brightness(1.1)}
 .bgfade{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 80% at 50% 35%,rgba(10,10,11,.15),rgba(10,10,11,.75) 70%,#0a0a0b),linear-gradient(180deg,transparent 0,rgba(10,10,11,calc(var(--sp,0)*.7)) 100%)}
 
 /* ---------- smooth, stretchy scroll ---------- */
@@ -47,7 +47,7 @@ html.ss #sm{position:fixed;left:0;top:0;width:100%;will-change:transform}
 @keyframes spin{to{--a:360deg}}
 @keyframes sheen{to{background-position:-250% 0}}
 .irid{background:linear-gradient(100deg,#6d6d73 18%,#f4f4f6 34%,#b8c6ff 40%,#ffd3f2 46%,#c9fff1 52%,#f4f4f6 58%,#6d6d73 74%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 7s linear infinite}
-.h2 em{background:linear-gradient(100deg,#5f5f65 18%,#d9d9dd 34%,#aab8f0 40%,#efc4e2 46%,#bdeee2 52%,#d9d9dd 58%,#5f5f65 74%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 9s linear infinite}
+.h2 em .w{background:linear-gradient(100deg,#5f5f65 18%,#d9d9dd 34%,#aab8f0 40%,#efc4e2 46%,#bdeee2 52%,#d9d9dd 58%,#5f5f65 74%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 9s linear infinite;padding-right:.04em}
 .lg::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:.55;transition:opacity .4s;
   background:conic-gradient(from var(--a),rgba(255,255,255,.05),rgba(184,198,255,.7),rgba(255,255,255,.08),rgba(255,211,242,.65),rgba(255,255,255,.05),rgba(201,255,241,.6),rgba(255,255,255,.05));
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 8s linear infinite}
@@ -57,27 +57,14 @@ nav.lg::before{animation-duration:14s;opacity:.4}
 .dl::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.9) 50%,transparent 65%);transform:translateX(-120%);transition:none}
 .dl:hover::after{transform:translateX(120%);transition:transform .8s ease}
 
-/* ---------- hud, like the film ---------- */
-.hud{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;transition:opacity .4s}
-.hud.on{opacity:1}
-.hud i{position:absolute;background:rgba(255,255,255,.1)}
-.hud .hx{left:0;right:0;height:1px}.hud .hy{top:0;bottom:0;width:1px}
-.hud span{position:absolute;font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .prog{position:fixed;right:18px;top:50%;translate:0 -50%;z-index:55;height:34vh;width:1px;background:rgba(255,255,255,.1)}
 .prog b{position:absolute;left:0;top:0;width:1px;background:#fff;height:calc(var(--sp,0)*100%)}
 .prog span{position:absolute;right:8px;top:calc(var(--sp,0)*100%);translate:0 -50%;font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums}
-@media (hover:none),(max-width:720px){ .hud,.prog{display:none} }
+@media (hover:none),(max-width:720px){ .prog{display:none} }
 .sec{display:flex;align-items:center;gap:14px;margin-bottom:28px;font-size:11px;color:var(--dim)}
 .sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.18),transparent)}
 .sec b{color:var(--ink);font-weight:500}
 
-/* ---------- marquee ---------- */
-.mq{margin-top:16vh;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;transform:rotate(-2deg) scale(1.04)}
-.mq.b{transform:rotate(2deg) scale(1.04);margin-top:0}
-.mq .t{display:flex;width:max-content;gap:0;will-change:transform}
-.mq span{font-size:clamp(28px,4.4vw,56px);font-weight:700;letter-spacing:-.05em;white-space:nowrap;padding-right:.6em;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.35)}
-.mq span:nth-child(3n+2){color:#ececec;-webkit-text-stroke:0}
-.mq span:nth-child(3n+3){font-style:italic;font-weight:200}
 
 /* ---------- memory chart ---------- */
 .mem{margin-top:56px;border-radius:30px;padding:clamp(22px,3vw,36px)}
@@ -99,6 +86,73 @@ nav.lg::before{animation-duration:14s;opacity:.4}
 .axis{display:grid;grid-template-columns:minmax(150px,240px) minmax(0,1fr) 170px;gap:22px;font-size:10px;color:var(--dim2);margin-top:6px}
 .axis div{display:flex;justify-content:space-between}
 @media (max-width:760px){ .mrow,.axis{grid-template-columns:1fr} .mrow .v{text-align:left} .cells{grid-template-columns:repeat(50,1fr)} .axis>span,.axis>em{display:none} }
+
+/* ---------- spec sheet ---------- */
+.spec{display:grid;grid-template-columns:repeat(6,1fr);margin-top:12vh;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.spec div{padding:22px 18px 22px 0;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--line);padding-left:18px}
+.spec div:first-child{padding-left:0}.spec div:last-child{border-right:0}
+.spec b{font-size:clamp(17px,1.7vw,22px);font-weight:700;letter-spacing:-.03em;color:var(--hi)}
+.spec em{font-style:normal;font-size:11px;color:var(--dim)}
+@media (max-width:900px){ .spec{grid-template-columns:repeat(3,1fr)} .spec div:nth-child(3){border-right:0} .spec div:nth-child(4){padding-left:0} .spec div:nth-child(-n+3){border-bottom:1px solid var(--line)} }
+
+/* ---------- memory chart, readable first ---------- */
+.mem{margin-top:56px;border-radius:30px;padding:clamp(22px,3vw,40px)}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.mhead b{font-size:15px;color:var(--ink);font-weight:600}
+.legend{display:flex;gap:18px;font-size:11px;color:var(--dim)}
+.legend i{display:inline-block;width:18px;height:6px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.legend .l1 i{background:rgba(255,255,255,.75)}.legend .l2 i{background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 3px,transparent 3px 5px)}.legend .l3 i{background:linear-gradient(90deg,#fff,#b8c6ff,#ffd3f2)}
+.plot{position:relative;display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr) 150px;row-gap:22px;column-gap:24px;align-items:center}
+.plot .nm b{display:block;color:var(--ink);font-size:14px;font-weight:600;letter-spacing:-.02em}
+.plot .nm span{font-size:11px;color:var(--dim)}
+.track{position:relative;height:44px}
+.grid{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 20%);pointer-events:none}
+.bar{position:absolute;top:12px;height:20px;border-radius:4px;left:0;width:0;transition:width 1.6s cubic-bezier(.2,.9,.2,1)}
+.bar.solid{background:rgba(255,255,255,.75)}
+.bar.range{background:repeating-linear-gradient(90deg,rgba(255,255,255,.32) 0 3px,transparent 3px 5px);border-radius:0 4px 4px 0;transition-delay:.5s}
+.bar.mz{background:linear-gradient(90deg,#fff,#b8c6ff 50%,#ffd3f2);box-shadow:0 0 18px rgba(190,205,255,.55)}
+.val{white-space:nowrap;font-size:clamp(20px,2.2vw,28px);font-style:italic;font-weight:200;letter-spacing:-.03em;color:var(--ink);text-align:right;opacity:0;transition:opacity .8s 1s}
+.val small{display:block;font-size:10px;font-style:normal;font-weight:500;letter-spacing:0;color:var(--dim)}
+.mem.in .val{opacity:1}
+.ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--dim2);margin-top:-8px;grid-column:2}
+.mfoot{display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,60px);align-items:end;margin-top:34px;padding-top:26px;border-top:1px solid var(--line)}
+.mfoot .big{font-size:clamp(56px,8vw,120px);line-height:.85;letter-spacing:-.06em}
+.mfoot .big small{display:block;font-size:12px;font-style:normal;font-weight:500;letter-spacing:0;color:var(--dim);margin-top:10px}
+.how{font-size:12px;color:var(--txt)}
+.how b{color:var(--ink);font-weight:600;display:block;margin-bottom:6px;font-size:13px}
+.how ol{padding-left:18px;color:var(--dim)}
+.how kbd{font-family:inherit;font-size:11px;color:var(--ink);padding:1px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+@media (max-width:760px){ .plot{grid-template-columns:1fr} .val{text-align:left} .ticks{grid-column:1} .mfoot{grid-template-columns:1fr} }
+
+/* ---------- trust ---------- */
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:56px}
+.tc{border-radius:26px;padding:24px;display:flex;flex-direction:column;gap:10px;min-height:210px}
+.tc .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.tc .ic svg{width:18px;height:18px;fill:none;stroke:#ececec;stroke-width:1.6}
+.tc h3{font-size:19px;font-weight:700;letter-spacing:-.03em;color:var(--hi);margin-top:auto}
+.tc p{font-size:13px}
+.tc a.u{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(255,255,255,.3);text-underline-offset:3px}
+.tc a.u:hover{text-decoration-color:#fff}
+.hash{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--ink);word-break:break-all;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);cursor:pointer}
+.hash:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.news{grid-column:span 3;flex-direction:row;gap:30px;min-height:0}
+.news .l{flex:0 0 220px;display:flex;flex-direction:column;gap:8px}
+.news .l b{font-size:clamp(40px,5vw,64px);line-height:.9;color:var(--hi)}
+.news ul{list-style:none;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px 30px;align-content:start}
+.news li{font-size:13px;padding-left:16px;position:relative}
+.news li::before{content:"";position:absolute;left:0;top:.72em;width:7px;height:1px;background:var(--dim)}
+.news li b{color:var(--ink);font-weight:600}
+@media (max-width:900px){ .trust{grid-template-columns:1fr} .news{grid-column:auto;flex-direction:column} .news ul{grid-template-columns:1fr} }
+
+/* ---------- words come in one by one, out of a blur ---------- */
+.h2 em{font-style:italic}
+.h2 .w{display:inline-block;opacity:0;filter:blur(14px);translate:0 .25em;transition:opacity .9s ease,filter 1s ease,translate 1.1s var(--spring)}
+.h2.in .w{opacity:1;filter:blur(0);translate:0 0}
+.h2.rv{opacity:1;translate:0 0}
+
+/* ---------- cards lean toward the cursor ---------- */
+.tilt{transform:perspective(900px) rotateX(var(--ry,0deg)) rotateY(var(--rx,0deg));transition:transform .6s var(--spring)}
+.tilt.hov{transition:transform .12s linear}
 
 /* nav */
 nav{position:fixed;top:16px;left:50%;translate:-50% 0;z-index:50;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 20px;border-radius:30px;width:min(760px,calc(100% - 24px))}
@@ -219,7 +273,6 @@ footer .ls{display:flex;gap:18px}
 
 <video id="bgv" autoplay muted loop playsinline preload="auto" poster="bg.jpg"><source src="bg.mp4" type="video/mp4"></video>
 <div class="bgfade"></div>
-<div class="hud" id="hud"><i class="hx" id="hx"></i><i class="hy" id="hy"></i><span id="hc"></span></div>
 <div class="prog"><b></b><span id="pp">00</span></div>
 <nav class="lg">
   <a class="logo" href="#top">muzika<span class="ver" data-ver></span></a>
@@ -227,6 +280,7 @@ footer .ls{display:flex;gap:18px}
   <a class="lk" href="#features">features</a>
   <a class="lk" href="#light">lighter</a>
   <a class="lk" href="#visualizers">visualizers</a>
+  <a class="lk" href="#trust">trust</a>
   <a class="lk" href="#install">install</a>
   <a class="lk" href="#faq">faq</a>
   <a class="dl" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download</a>
@@ -247,16 +301,18 @@ footer .ls{display:flex;gap:18px}
 <div class="shot rv"><div class="fr lg" id="fr"><img src="shot.jpg" alt="muzika playing a track, with the dot visualizer around the cover" width="1600" height="1000"></div></div>
 
 <div class="wrap">
-  <div class="nums rv">
-    <div><b class="it">0%</b><span>cpu in the tray. everything that moves stops when you can't see it</span></div>
-    <div><b class="it" data-mb>4.6</b><span>megabytes. one file, no installer</span></div>
-    <div><b class="it">12</b><span>visualizers made of dots, all hearing kicks, claps and hats</span></div>
-    <div><b class="it">0</b><span>captchas. likes live in muzika, soundcloud never gets in the way</span></div>
-  </div>
 
 </div>
-  <div class="mq"><div class="t" data-dir="1"><span>streams in pieces</span><span>likes without captchas</span><span>0% cpu in the tray</span><span>radio from any track</span><span>12 visualizers</span><span>wrapped every month</span><span>updates itself</span><span>one small exe</span></div></div>
-  <div class="mq b"><div class="t" data-dir="-1"><span>made for gamers</span><span>dark and quiet</span><span>soundcloud on your desktop</span><span>dots that hear the beat</span><span>free</span><span>open source</span><span>no installer</span><span>no ads</span></div></div>
+<div class="wrap">
+  <div class="spec rv">
+    <div><span class="lbl">file</span><b>muzika.exe</b><em data-size>4.6 mb</em></div>
+    <div><span class="lbl">system</span><b>win 10 / 11</b><em>x64, webview2</em></div>
+    <div><span class="lbl">memory</span><b>~150 mb</b><em>while playing</em></div>
+    <div><span class="lbl">in the tray</span><b>0% cpu</b><em>only the sound runs</em></div>
+    <div><span class="lbl">price</span><b>free</b><em>no ads, no account</em></div>
+    <div><span class="lbl">code</span><b>open</b><em>every line on github</em></div>
+  </div>
+</div>
 <div class="wrap">
   <section id="what">
     <div class="sec rv"><b>01</b> what</div>
@@ -292,11 +348,23 @@ footer .ls{display:flex;gap:18px}
       <p class="lead rv">soundcloud in a browser drags the whole browser along: tabs, extensions, a renderer for every site. muzika is one page with one job, so it takes a fraction of the memory and goes to sleep when you're in a game.</p>
     </div>
     <div class="mem lg rv" id="mem">
-      <div class="mrow"><div class="nm"><b>a browser with soundcloud</b><span>chrome, opera gx, edge. usual tabs open</span></div><div class="cells" data-from="60" data-to="100"></div><div class="v it"><span data-n="1.5">0</span>–<span data-n="2.5">0</span><small>gb of ram</small></div></div>
-      <div class="mrow"><div class="nm"><b>muzika, playing</b><span>visualizer on, window open</span></div><div class="cells mz" data-from="4" data-to="8"></div><div class="v it">~<span data-n="0.15">0</span><small>gb of ram</small></div></div>
-      <div class="mrow"><div class="nm"><b>muzika, behind a game</b><span>in the tray, only the sound runs</span></div><div class="cells mz" data-from="3" data-to="4"></div><div class="v it"><span data-n="0" data-u="%">0</span>%<small>cpu</small></div></div>
-      <div class="axis"><span></span><div><span>0</span><span>0.5 gb</span><span>1 gb</span><span>1.5 gb</span><span>2 gb</span><span>2.5 gb</span></div><em></em></div>
-      <div class="memx"><div class="big it irid">~10× less</div><p>rough numbers from windows task manager. a browser grows with every tab and extension; muzika grows a little with what's on screen. check yours, it's the best ad we have.</p></div>
+      <div class="mhead"><b>memory while listening</b>
+        <div class="legend"><span class="l1"><i></i>usual</span><span class="l2"><i></i>with more tabs</span><span class="l3"><i></i>muzika</span></div></div>
+      <div class="plot">
+        <div class="nm"><b>a browser with soundcloud</b><span>chrome, opera gx, edge</span></div>
+        <div class="track"><div class="grid"></div><div class="bar solid" data-w="60"></div><div class="bar range" data-l="60" data-w="40"></div></div><span class="val">1.5–2.5 gb<small>ram</small></span>
+        <div class="nm"><b>muzika, playing</b><span>window open, visualizer on</span></div>
+        <div class="track"><div class="grid"></div><div class="bar mz" data-w="6"></div></div><span class="val">~0.15 gb<small>ram, estimate</small></span>
+        <div class="nm"><b>muzika, behind a game</b><span>in the tray</span></div>
+        <div class="track"><div class="grid"></div><div class="bar mz" data-w="4"></div></div><span class="val">0% cpu<small>nothing draws</small></span>
+        <div class="ticks"><span>0</span><span>0.5</span><span>1</span><span>1.5</span><span>2</span><span>2.5 gb</span></div>
+      </div>
+      <div class="mfoot">
+        <div class="big it irid">~10×<small>less memory than a browser with soundcloud</small></div>
+        <div class="how"><b>don't trust us, check it in 20 seconds</b>
+          <ol><li>open muzika and play a track</li><li>press <kbd>ctrl</kbd> <kbd>shift</kbd> <kbd>esc</kbd>, processes tab</li><li>compare the muzika group with your browser group</li></ol>
+          <p style="margin-top:8px;color:var(--dim2);font-size:11px">numbers differ between pcs: a browser grows with every tab and extension.</p></div>
+      </div>
     </div>
   </section>
 
@@ -310,8 +378,28 @@ footer .ls{display:flex;gap:18px}
       <div class="sw lg" id="vzSw"><button data-v="burst" class="on">burst</button><button data-v="bars">ring bars</button><button data-v="pulse">pulse</button><button data-v="orbit">orbit</button><button data-v="stars">starfield</button></div></div>
   </section>
 
+  <section id="trust">
+    <div class="sec rv"><b>05</b> trust</div>
+    <div class="two">
+      <h2 class="h2 rv">built in<br><em>the open.</em></h2>
+      <p class="lead rv">you're running an exe from the internet, so here's everything you need to check it. nothing hidden, nothing collected.</p>
+    </div>
+    <div class="trust">
+      <div class="tc lg rv tilt"><div class="ic"><svg viewBox="0 0 24 24"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"/></svg></div>
+        <h3>open source</h3><p>every line of muzika is on <a class="u" href="https://github.com/shadeqls-lang/muzika" target="_blank" rel="noopener">github</a>. read it, build it yourself with one bat file, or ask someone who can.</p></div>
+      <div class="tc lg rv tilt"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
+        <h3>built by github, not by hand</h3><p>each release is compiled by github actions straight from the public code. the file's fingerprint:</p>
+        <div class="hash" id="sha" title="click to copy">loading from github…</div></div>
+      <div class="tc lg rv tilt"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <h3>nothing leaves your pc</h3><p>no analytics, no account of its own. likes, stats and settings live in <b style="color:var(--ink)">muzika_data</b> next to the exe. the soundcloud login is encrypted by windows.</p></div>
+      <div class="tc lg rv news"><div class="l"><span class="lbl">latest release</span><b class="it" data-ver>v0.5</b><span class="lbl" id="relDate"></span>
+          <a class="u" style="font-size:12px;color:var(--ink);margin-top:auto" href="https://github.com/shadeqls-lang/muzika/releases" target="_blank" rel="noopener">every version →</a></div>
+        <ul id="relNotes"><li>muzika updates itself: a new version installs on the loading screen.</li></ul></div>
+    </div>
+  </section>
+
   <section id="install">
-    <div class="sec rv"><b>05</b> install</div>
+    <div class="sec rv"><b>06</b> install</div>
     <h2 class="h2 rv">three steps.<br><em>that's it.</em></h2>
     <div class="steps">
       <div class="step lg rv"><span class="n it">1</span><h3>download</h3><p>one file, <code>muzika.exe</code>. put it in its own folder: muzika keeps everything in <code>muzika_data</code> right next to it, never on c:.</p></div>
@@ -322,7 +410,7 @@ footer .ls{display:flex;gap:18px}
   </section>
 
   <section id="faq">
-    <div class="sec rv"><b>06</b> faq</div>
+    <div class="sec rv"><b>07</b> faq</div>
     <h2 class="h2 rv">questions.</h2>
     <div class="faq rv">
       <details><summary>is it free?</summary><p>yes. no ads, no account of its own, no subscription. the code is on github.</p></details>
@@ -350,10 +438,24 @@ footer .ls{display:flex;gap:18px}
 
 <script>
 const REPO="shadeqls-lang/muzika";
+// what's on screen: checked on every scroll frame, no IntersectionObserver (firefox misses it inside the moving page)
+const WATCH=[];
+function watch(el,cb,opt){ WATCH.push({el,cb,once:!opt||opt.once!==false,m:(opt&&opt.margin)||0,state:null}); requestAnimationFrame(checkWatch); }
+function checkWatch(){ const H=innerHeight;
+  for(let i=WATCH.length-1;i>=0;i--){ const w=WATCH[i], r=w.el.getBoundingClientRect(), v=r.bottom>-w.m&&r.top<H*(1-(w.once?.08:0))+w.m&&r.height+r.width>0;
+    if(v!==w.state){ w.state=v; if(w.once){ if(v){ w.cb(true); WATCH.splice(i,1); } } else w.cb(v); } } }
+addEventListener("resize",checkWatch);
 // newest version and size, straight from github
 fetch("https://api.github.com/repos/"+REPO+"/releases/latest").then(r=>r.ok?r.json():null).then(d=>{
   if(!d) return; const a=(d.assets||[]).find(x=>/\.exe$/i.test(x.name)); const v=(d.tag_name||"").replace(/^v/i,"");
   document.querySelectorAll("[data-ver]").forEach(e=>e.textContent=v?"v"+v:"");
+  if(d.published_at){ const dt=new Date(d.published_at); document.getElementById("relDate").textContent="released "+dt.getDate()+" "+["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"][dt.getMonth()]+" "+dt.getFullYear(); }
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const li=String(d.body||"").split(/\r?\n/).filter(l=>/^[-*]\s/.test(l.trim())).slice(0,6).map(l=>"<li>"+esc(l.trim().slice(2)).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")+"</li>").join("");
+  if(li) document.getElementById("relNotes").innerHTML=li;
+  const sha=document.getElementById("sha");
+  if(a&&a.digest&&/^sha256:/.test(a.digest)){ sha.textContent="sha-256 "+a.digest.slice(7); sha.onclick=()=>navigator.clipboard&&navigator.clipboard.writeText(a.digest.slice(7)).then(()=>{ sha.textContent="copied"; setTimeout(()=>sha.textContent="sha-256 "+a.digest.slice(7),1200); }); }
+  else sha.innerHTML='see it on the <a class="u" href="https://github.com/'+REPO+'/actions/workflows/release.yml" target="_blank" rel="noopener">build page</a>';
   if(a){ const mb=(a.size/1048576).toFixed(1);
     document.querySelectorAll("[data-size]").forEach(e=>e.textContent=mb+" mb");
     document.querySelectorAll("[data-mb]").forEach(e=>e.textContent=mb);
@@ -409,9 +511,11 @@ const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.
   }
   function go(){ if(run) return; run=true; last=performance.now(); requestAnimationFrame(step); }
   addEventListener("pointermove",()=>{ if(vis) go(); },{passive:true});
-  new IntersectionObserver(e=>{ vis=e[0].isIntersecting; if(vis) go(); }).observe(cv);
+  watch(cv,v=>{ vis=v; if(v) go(); },{once:false});
   let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(build,150); });
-  (document.fonts?document.fonts.ready:Promise.resolve()).then(build);
+  // build as soon as the page has a size, again when the font arrives
+  const tryBuild=()=>{ if(cv.clientWidth&&cv.clientHeight) build(); else setTimeout(tryBuild,60); };
+  tryBuild(); if(document.fonts) document.fonts.ready.then(()=>setTimeout(build,30)); addEventListener("load",()=>setTimeout(build,30));
 })();
 
 /* ---------- the app screenshot straightens up as you scroll ---------- */
@@ -421,8 +525,20 @@ const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.
   addEventListener("scroll",f,{passive:true}); f(); })();
 
 /* ---------- reveal ---------- */
-const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
-document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+// headings come in word by word
+document.querySelectorAll(".h2").forEach(h=>{ let k=0; const walk=n=>{ [...n.childNodes].forEach(c=>{ if(c.nodeType===3){ const f=document.createDocumentFragment();
+    c.textContent.split(/(\s+)/).forEach(t=>{ if(!t) return; if(/^\s+$/.test(t)) f.appendChild(document.createTextNode(t)); else { const sp=document.createElement("span"); sp.className="w"; sp.textContent=t; sp.style.transitionDelay=(k++*.07)+"s"; f.appendChild(sp); } });
+    c.replaceWith(f); } else if(c.nodeType===1&&c.tagName!=="BR") walk(c); }); }; walk(h); });
+document.querySelectorAll(".rv").forEach(el=>watch(el,()=>el.classList.add("in")));
+// cards lean toward the cursor, a little
+if(matchMedia("(hover:hover)").matches) document.querySelectorAll(".card,.step,.tc:not(.news)").forEach(c=>{ c.classList.add("tilt");
+  c.addEventListener("pointermove",e=>{ const r=c.getBoundingClientRect(), x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    c.classList.add("hov"); c.style.setProperty("--rx",(x*5).toFixed(2)+"deg"); c.style.setProperty("--ry",(-y*5).toFixed(2)+"deg"); });
+  c.addEventListener("pointerleave",()=>{ c.classList.remove("hov"); c.style.setProperty("--rx","0deg"); c.style.setProperty("--ry","0deg"); }); });
+// download buttons are pulled a little toward the cursor
+if(matchMedia("(hover:hover)").matches) document.querySelectorAll(".dl.big").forEach(b=>{
+  b.addEventListener("pointermove",e=>{ const r=b.getBoundingClientRect(); b.style.translate=`${((e.clientX-r.left)/r.width-.5)*10}px ${((e.clientY-r.top)/r.height-.5)*8}px`; });
+  b.addEventListener("pointerleave",()=>b.style.translate="0 0"); });
 
 /* ---------- visualizer demo: the same styles as the app, on a test beat ---------- */
 (function(){
@@ -480,7 +596,7 @@ document.querySelectorAll(".rv").forEach(el=>io.observe(el));
     sig(t,dt); const cov=box.querySelector(".cov").getBoundingClientRect(), r=cv.getBoundingClientRect();
     const cc={x:(cov.left+cov.width/2-r.left)*dpr,y:(cov.top+cov.height/2-r.top)*dpr,h:cov.width/2*dpr}, G=Math.max(2,Math.round(3*dpr)), sz=Math.max(1,Math.round(1.5*dpr));
     c.clearRect(0,0,cv.width,cv.height); c.fillStyle="#e9e9e9"; c.beginPath(); ST[style](cc,G,sz); c.fill(); }
-  new IntersectionObserver(e=>{ const was=vis; vis=e[0].isIntersecting; if(vis&&!was){ size(); requestAnimationFrame(frame); } }).observe(box);
+  watch(box,v=>{ const was=vis; vis=v; if(vis&&!was){ size(); requestAnimationFrame(frame); } },{once:false,margin:100});
   addEventListener("resize",()=>{ if(vis) size(); });
   document.getElementById("vzSw").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; style=b.dataset.v;
     document.querySelectorAll("#vzSw button").forEach(x=>x.classList.toggle("on",x===b)); };
@@ -504,41 +620,24 @@ function ssStep(){
   const y=-SS.cur+SS.over, oy=SS.over>0?SS.cur:SS.over<0?SS.cur+innerHeight:SS.cur+innerHeight/2;
   sm.style.transformOrigin=`50% ${oy}px`;
   sm.style.transform=`translate3d(0,${y.toFixed(2)}px,0) scaleY(${st.toFixed(4)})`;
-  onScrollFx();
+  onScrollFx(); checkWatch();
   if(SS.v!==0||SS.over!==0) requestAnimationFrame(ssStep); else ssRun=false;
 }
-addEventListener("scroll",()=>{ if(SS.on) kickSS(); else onScrollFx(); },{passive:true});
+addEventListener("scroll",()=>{ if(SS.on) kickSS(); else { onScrollFx(); checkWatch(); } },{passive:true});
 
-/* scroll-driven bits: progress, background zoom, marquee speed */
-const MQ=[...document.querySelectorAll(".mq .t")].map(t=>{ t.innerHTML+=t.innerHTML; return {t,x:0,dir:+t.dataset.dir}; });
+/* scroll-driven bits: progress, background zoom */
 function onScrollFx(){
   const max=Math.max(1,document.body.scrollHeight-innerHeight), sp=Math.min(1,Math.max(0,scrollY/max));
   root.style.setProperty("--sp",sp.toFixed(4)); document.getElementById("pp").textContent=String(Math.round(sp*100)).padStart(2,"0");
 }
-let mqLast=0;
-(function mq(t){ requestAnimationFrame(mq); const dt=Math.min(.05,(t-mqLast)/1000||.016); mqLast=t;
-  const boost=SS.on?SS.v*.6:0;
-  for(const m of MQ){ const w=m.t.scrollWidth/2; m.x-=(60+Math.abs(boost)*6)*dt*m.dir*(boost<0?-1:1); if(m.x<-w) m.x+=w; if(m.x>0) m.x-=w; m.t.style.transform=`translate3d(${m.x.toFixed(1)}px,0,0)`; }
-})(0);
 onScrollFx();
 
-/* ---------- hud: coordinates under the cursor, like the film behind ---------- */
-(function(){ const h=document.getElementById("hud"), hx=document.getElementById("hx"), hy=document.getElementById("hy"), hc=document.getElementById("hc");
-  if(!matchMedia("(hover:hover)").matches) return;
-  addEventListener("pointermove",e=>{ h.classList.add("on"); hx.style.top=e.clientY+"px"; hy.style.left=e.clientX+"px";
-    hc.style.left=(e.clientX+12)+"px"; hc.style.top=(e.clientY+10)+"px"; hc.textContent=`(X ${Math.round(e.clientX)} Y ${Math.round(e.clientY+(SS.on?SS.cur:scrollY))})`; },{passive:true});
-  document.addEventListener("pointerleave",()=>h.classList.remove("on"));
-})();
 
-/* ---------- memory chart: cells fill, numbers count ---------- */
-(function(){ const box=document.getElementById("mem"); let done=false;
-  box.querySelectorAll(".cells").forEach(c=>{ c.innerHTML="<i></i>".repeat(100); });
-  new IntersectionObserver(es=>{ if(!es[0].isIntersecting||done) return; done=true;
-    box.querySelectorAll(".cells").forEach((c,ri)=>{ const a=+c.dataset.from, b=+c.dataset.to, cells=[...c.children];
-      cells.forEach((el,i)=>setTimeout(()=>{ if(i<a) el.classList.add("f"); else if(i<b) el.classList.add("r"); },300+ri*250+i*9)); });
-    box.querySelectorAll("[data-n]").forEach(el=>{ const to=+el.dataset.n, dec=to%1?(to<1?2:1):0, t0=performance.now();
-      (function f(t){ const k=Math.min(1,(t-t0)/1400), e=1-Math.pow(1-k,3); el.textContent=(to*e).toFixed(dec); if(k<1) requestAnimationFrame(f); })(t0); });
-  },{threshold:.35}).observe(box);
+/* ---------- memory chart: bars grow when it comes into view ---------- */
+(function(){ const box=document.getElementById("mem");
+  watch(box,()=>{ box.classList.add("in");
+    box.querySelectorAll(".bar").forEach(b=>{ if(b.dataset.l) b.style.left=b.dataset.l+"%"; b.style.width=b.dataset.w+"%"; });
+  });
 })();
 
 /* ---------- background film: only plays when the tab is visible ---------- */
