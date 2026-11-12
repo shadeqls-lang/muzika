@@ -46,9 +46,9 @@ run `build.bat`. it uses the c# compiler that ships with windows (.net framework
 
 ## releasing (for me)
 
-1. bump the number in `version.txt` (and commit)
-2. push a tag: `git tag v0.2.1 && git push origin v0.2.1`
-3. github actions builds `muzika.exe` and publishes the release; every installed muzika picks it up within a few hours
+1. bump the number in `version.txt` and write what changed in `notes.md` (muzika shows it as "what's new")
+2. push a tag (`git tag v0.3.1 && git push origin v0.3.1`) or run the `release` workflow from the actions tab
+3. github actions builds `muzika.exe` and publishes the release; every installed muzika picks it up the next time it starts
 
 ## feedback
 

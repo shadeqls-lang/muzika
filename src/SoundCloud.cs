@@ -719,6 +719,8 @@ namespace Emopunk
         public string Repo = "shadeqls-lang/muzika";
         public bool Auto = true;
         public string NewVersion;
+        public string Notes;                    // release notes of the downloaded version
+        public string JustNotes, JustVer;       // notes of the version we just updated to
         public bool Ready { get { return NewVersion != null && File.Exists(next); } }
         public Action<string, string, double> OnState;
         int busy;
@@ -736,6 +738,9 @@ namespace Emopunk
                     if (d != null && d.TryGetValue("repo", out v) && v != null && Regex.IsMatch(v.ToString(), "^[\\w.-]+/[\\w.-]+$")) Repo = v.ToString();
                     if (d != null && d.TryGetValue("auto", out v) && v is bool) Auto = (bool)v;
                     if (d != null && d.TryGetValue("ready", out v) && v != null && File.Exists(next) && Newer(v.ToString(), Program.Version)) NewVersion = v.ToString();
+                    if (d != null && d.TryGetValue("notes", out v) && v != null) Notes = v.ToString();
+                    if (d != null && d.TryGetValue("justNotes", out v) && v != null) JustNotes = v.ToString();
+                    if (d != null && d.TryGetValue("justVer", out v) && v != null) JustVer = v.ToString();
                 }
             }
             catch { }
@@ -744,7 +749,7 @@ namespace Emopunk
 
         void SaveCfg()
         {
-            try { File.WriteAllText(cfgFile, new JavaScriptSerializer().Serialize(new { repo = Repo, auto = Auto, ready = NewVersion })); } catch { }
+            try { File.WriteAllText(cfgFile, new JavaScriptSerializer().Serialize(new { repo = Repo, auto = Auto, ready = NewVersion, notes = NewVersion != null ? Notes : null, justNotes = JustNotes, justVer = JustVer })); } catch { }
         }
 
         public void Configure(string repo, bool auto)
@@ -776,18 +781,25 @@ namespace Emopunk
             return false;
         }
 
-        public void Start()
+        // one quick check per launch, nothing while muzika is open
+        public bool Start()
         {
-            Thread t = new Thread(delegate()
-            {
-                Thread.Sleep(8000);   // let the player settle first
-                while (true)
-                {
-                    if (Auto) Check(false);
-                    Thread.Sleep(TimeSpan.FromHours(6));
-                }
-            });
+            if (!Auto) return false;
+            State("checking", null, 0);
+            Thread t = new Thread(delegate() { Check(false); });
             t.IsBackground = true; t.Start();
+            return true;
+        }
+
+        // the changelog was shown once, forget it
+        public void SeenNotes() { if (JustNotes == null && JustVer == null) return; JustNotes = null; JustVer = null; SaveCfg(); }
+
+        // notes of any released version (settings, "what's new")
+        public string FetchNotes(string ver)
+        {
+            string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/tags/v" + Regex.Replace(ver ?? "", "^[vV]", ""));
+            Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(rel) as Dictionary<string, object>;
+            object b; return d != null && d.TryGetValue("body", out b) && b != null ? b.ToString() : "";
         }
 
         public void CheckNow() { ThreadPool.QueueUserWorkItem(delegate { Check(true); }); }
@@ -800,12 +812,13 @@ namespace Emopunk
             {
                 if (Ready) { State("ready", NewVersion, 1); return; }
                 State("checking", null, 0);
-                string ver = null, url = null;
+                string ver = null, url = null, notes = null;
                 try
                 {
                     string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/latest");
                     Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(rel) as Dictionary<string, object>;
-                    object tag, assets; d.TryGetValue("tag_name", out tag); d.TryGetValue("assets", out assets);
+                    object tag, assets, body; d.TryGetValue("tag_name", out tag); d.TryGetValue("assets", out assets);
+                    if (d.TryGetValue("body", out body) && body != null) notes = body.ToString();
                     System.Collections.IEnumerable al = assets as System.Collections.IEnumerable;
                     if (tag != null && al != null)
                         foreach (object o in al)
@@ -836,7 +849,7 @@ namespace Emopunk
                 if (head[0] != 'M' || head[1] != 'Z' || new FileInfo(tmp).Length < 500000) { File.Delete(tmp); throw new Exception("downloaded file is not a program"); }
                 if (File.Exists(next)) File.Delete(next);
                 File.Move(tmp, next);
-                NewVersion = Regex.Replace(ver, "^[vV]", ""); SaveCfg();
+                NewVersion = Regex.Replace(ver, "^[vV]", ""); Notes = notes; SaveCfg();
                 Log.Write("update: v" + NewVersion + " downloaded");
                 State("ready", NewVersion, 1);
             }
@@ -853,7 +866,8 @@ namespace Emopunk
             File.Move(exe, old);
             try { File.Move(next, exe); }
             catch { File.Move(old, exe); throw; }
-            NewVersion = null; SaveCfg();
+            JustVer = NewVersion; JustNotes = Notes;
+            NewVersion = null; Notes = null; SaveCfg();
         }
     }
 }

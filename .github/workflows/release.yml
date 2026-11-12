@@ -1,5 +1,6 @@
 # push a tag like v0.2.1 -> github builds muzika.exe on windows and publishes a release.
 # every installed muzika finds that release and updates itself.
+# write what changed in notes.md before releasing: muzika shows it after the update.
 name: release
 
 on:
@@ -45,5 +46,5 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: muzika ${{ env.TAG }}
           prerelease: false   # the in-app updater only sees normal releases
-          generate_release_notes: true
+          body_path: notes.md   # shown inside muzika as "what's new"
           files: muzika.exe
