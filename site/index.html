@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>muzika · soundcloud on your desktop</title>
+<meta name="description" content="muzika is a small soundcloud player for windows. dark, light, made to run next to a game. free and open source.">
+<meta property="og:title" content="muzika">
+<meta property="og:description" content="soundcloud on your desktop. light enough to run next to a game.">
+<meta property="og:image" content="shot.jpg">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,200;0,400;0,500;0,600;0,700;0,800;1,200;1,300&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0b;--s1:#111113;--s2:#18181b;--ink:#ececec;--hi:#f5f5f5;--txt:#b9b9be;--dim:#77777d;--dim2:#4a4a50;--line:rgba(255,255,255,.08);--fg:255,255,255;
+  --spring:cubic-bezier(.2,1.4,.4,1);--pad:clamp(20px,4vw,56px);--max:1240px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scrollbar-width:none}
+html::-webkit-scrollbar{display:none}
+body{background:var(--bg);color:var(--txt);font-family:"SF Pro Display","Inter Tight",-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:#fff;color:#000}
+/* grain over everything, like the app */
+body::after{content:"";position:fixed;inset:-50%;z-index:100;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 1s steps(4) infinite}
+@keyframes grain{25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-1%,3%)}}
+@media (prefers-reduced-motion:reduce){body::after{animation:none}}
+
+.lg{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 40%,rgba(255,255,255,.035));backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.12),0 30px 80px rgba(0,0,0,.35)}
+.lbl{font-size:11px;font-weight:500;color:var(--dim);letter-spacing:.01em}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+.it{font-style:italic;font-weight:200;letter-spacing:-.04em}
+
+/* nav */
+nav{position:fixed;top:16px;left:50%;translate:-50% 0;z-index:50;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 20px;border-radius:30px;width:min(760px,calc(100% - 24px))}
+nav .logo{font-weight:700;font-size:17px;letter-spacing:-.04em;color:var(--hi);margin-right:auto}
+nav .lk{font-size:13px;color:var(--txt);padding:8px 12px;border-radius:18px;transition:color .2s,background .2s}
+nav .lk:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+.dl{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 18px;border-radius:20px;background:#ececec;color:#0b0b0c;font-weight:600;font-size:13px;transition:transform .5s var(--spring),background .2s;white-space:nowrap}
+.dl:hover{background:#fff;transform:translateY(-1px)}
+.dl:active{transform:scale(.97)}
+.dl svg{width:15px;height:15px;fill:currentColor}
+@media (max-width:720px){ nav .lk{display:none} }
+
+/* hero */
+.hero{position:relative;height:100svh;min-height:640px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 var(--pad) 9vh;text-align:center}
+@media (hover:none){ .hero .hint{display:none} }
+#dots{position:absolute;inset:0;width:100%;height:100%}
+.hero .tag{position:relative;font-size:clamp(18px,2.4vw,26px);font-weight:500;letter-spacing:-.025em;color:var(--ink);max-width:640px;line-height:1.25}
+.hero .tag em{font-style:italic;font-weight:200;color:var(--dim)}
+.hero .row{position:relative;display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;justify-content:center}
+.dl.big{height:54px;padding:0 26px;border-radius:27px;font-size:15px}
+.dl.big small{font-weight:500;opacity:.55;font-size:12px}
+.ghost{display:inline-flex;align-items:center;height:54px;padding:0 24px;border-radius:27px;font-size:14px;color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);transition:background .2s}
+.ghost:hover{background:rgba(255,255,255,.07)}
+.hero .meta{position:relative;margin-top:16px;font-size:12px;color:var(--dim)}
+.hero .hint{position:absolute;top:calc(50% + 14vh);left:50%;translate:-50% 0;font-size:11px;color:var(--dim2);opacity:0;transition:opacity 1s}
+.hero .hint.on{opacity:1}
+
+/* the app */
+.shot{position:relative;margin:4vh auto 0;max-width:1240px;padding:0 var(--pad)}
+.shot .fr{border-radius:22px;padding:10px;transform:perspective(1600px) rotateX(var(--rx,10deg)) scale(var(--sc,.94));transform-origin:50% 0;transition:transform .2s linear}
+.shot img{display:block;width:100%;border-radius:14px}
+.shot::before{content:"";position:absolute;left:10%;right:10%;top:10%;bottom:-10%;background:radial-gradient(closest-side,rgba(255,255,255,.08),transparent);filter:blur(40px);z-index:-1}
+
+/* numbers */
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:14vh;border-top:1px solid var(--line)}
+.nums div{padding:26px 0 0;border-right:1px solid var(--line);padding-left:22px}
+.nums div:first-child{padding-left:0}
+.nums div:last-child{border-right:0}
+.nums b{display:block;font-size:clamp(46px,7vw,88px);line-height:.9;color:var(--hi)}
+.nums span{display:block;margin-top:10px;font-size:12px;color:var(--dim);max-width:200px}
+@media (max-width:760px){ .nums{grid-template-columns:1fr 1fr} .nums div:nth-child(2){border-right:0} .nums div:nth-child(3){padding-left:0} .nums div:nth-child(n+3){margin-top:26px} }
+
+/* sections */
+section{padding:16vh 0 0}
+.h2{font-size:clamp(44px,7.4vw,104px);font-weight:700;letter-spacing:-.065em;line-height:.88;color:var(--hi)}
+.h2 em{font-weight:200;font-style:italic;color:var(--dim);letter-spacing:-.05em}
+.lead{max-width:560px;font-size:17px;color:var(--txt);margin-top:26px}
+.two{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--pad);align-items:end}
+@media (max-width:860px){ .two{grid-template-columns:1fr} }
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:56px}
+.card{border-radius:26px;padding:24px 24px 26px;min-height:230px;display:flex;flex-direction:column;overflow:hidden}
+.card h3{font-size:22px;font-weight:700;letter-spacing:-.035em;color:var(--hi);margin-top:auto;line-height:1.1}
+.card p{font-size:13px;color:var(--txt);margin-top:8px;max-width:420px}
+.card .k{font-size:clamp(40px,5vw,64px);line-height:.95;color:var(--ink)}
+.c2{grid-column:span 2}.c3{grid-column:span 3}.c4{grid-column:span 4}
+@media (max-width:960px){ .c2{grid-column:span 3}.c4{grid-column:span 6} }
+@media (max-width:620px){ .bento>*{grid-column:span 6!important} }
+.card.wr{flex-direction:row;gap:24px;align-items:stretch}
+.card.wr img{width:44%;max-width:260px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08);align-self:center;transform:rotate(-3deg);transition:transform .8s var(--spring)}
+.card.wr:hover img{transform:rotate(0) scale(1.02)}
+.card.wr .tx{display:flex;flex-direction:column;flex:1}
+@media (max-width:620px){ .card.wr{flex-direction:column} .card.wr img{width:70%} }
+.disc{width:84px;height:84px;border-radius:14px}
+.mini{display:flex;gap:5px;align-items:flex-end;height:44px}
+.mini i{width:4px;background:rgba(255,255,255,.18);border-radius:2px;animation:eq 1.1s ease-in-out infinite}
+@keyframes eq{0%,100%{height:20%}50%{height:100%}}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills span{font-size:11px;padding:5px 11px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:var(--txt)}
+.heart{width:46px;height:46px;border-radius:50%;background:#ececec;display:grid;place-items:center}
+.heart svg{width:20px;fill:#0b0b0c}
+
+/* visualizer demo */
+.vz{margin-top:56px;border-radius:30px;overflow:hidden;position:relative;aspect-ratio:16/8;min-height:340px}
+#vz{position:absolute;inset:0;width:100%;height:100%}
+.vz .cov{position:absolute;left:50%;top:50%;width:min(22%,180px);aspect-ratio:1;translate:-50% -50%;border-radius:8px;background:url(cover.jpg) center/cover;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);filter:grayscale(1)}
+.vz .sw{position:absolute;left:50%;bottom:18px;translate:-50% 0;display:flex;gap:4px;padding:4px;border-radius:22px;flex-wrap:wrap;justify-content:center}
+.vz .sw button{height:34px;padding:0 15px;border-radius:17px;font-size:12px;color:var(--dim);transition:background .3s,color .3s}
+.vz .sw button.on{background:#ececec;color:#0b0b0c}
+.vz .lb{position:absolute;left:22px;top:20px}
+
+/* install */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:56px;counter-reset:s}
+.step{border-radius:26px;padding:24px;min-height:220px;display:flex;flex-direction:column}
+.step .n{font-size:64px;line-height:.9;color:var(--ink)}
+.step h3{font-size:20px;font-weight:700;letter-spacing:-.03em;color:var(--hi);margin-top:auto}
+.step p{font-size:13px;margin-top:8px}
+.step code{font-family:inherit;color:var(--ink);background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px}
+@media (max-width:860px){ .steps{grid-template-columns:1fr} }
+.note{margin-top:14px;border-radius:20px;padding:18px 22px;font-size:13px;display:flex;gap:16px;align-items:center}
+.note b{color:var(--ink);font-weight:600}
+
+/* faq */
+.faq{margin-top:46px;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 0;font-size:clamp(17px,2vw,22px);font-weight:600;letter-spacing:-.025em;color:var(--ink)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-weight:200;font-size:28px;color:var(--dim);transition:transform .5s var(--spring)}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{padding:0 0 24px;max-width:720px;font-size:14px}
+
+/* end */
+.end{padding:18vh 0 0;text-align:center}
+.end .h2{font-size:clamp(56px,11vw,160px)}
+.end .row{display:flex;gap:10px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+footer{margin-top:16vh;padding:26px 0 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+footer a:hover{color:var(--ink)}
+footer .ls{display:flex;gap:18px}
+
+/* reveal on scroll */
+.rv{opacity:0;translate:0 26px;transition:opacity .9s ease,translate 1.1s var(--spring)}
+.rv.in{opacity:1;translate:0 0}
+</style>
+</head>
+<body>
+
+<nav class="lg">
+  <a class="logo" href="#top">muzika</a>
+  <a class="lk" href="#what">what</a>
+  <a class="lk" href="#features">features</a>
+  <a class="lk" href="#visualizers">visualizers</a>
+  <a class="lk" href="#install">install</a>
+  <a class="lk" href="#faq">faq</a>
+  <a class="dl" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download</a>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="dots"></canvas>
+  <span class="hint" id="hint">swipe the mouse through the letters</span>
+  <p class="tag">soundcloud on your desktop. <em>dark, quiet, and light enough to run next to a game.</em></p>
+  <div class="row">
+    <a class="dl big" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download for windows <small data-ver></small></a>
+    <a class="ghost" href="https://github.com/shadeqls-lang/muzika" target="_blank" rel="noopener">source on github</a>
+  </div>
+  <p class="meta"><span data-size>one small .exe</span> · windows 10 / 11 · free</p>
+</header>
+
+<div class="shot rv"><div class="fr lg" id="fr"><img src="shot.jpg" alt="muzika playing a track, with the dot visualizer around the cover" width="1600" height="1000"></div></div>
+
+<div class="wrap">
+  <div class="nums rv">
+    <div><b class="it">0%</b><span>cpu in the tray. everything that moves stops when you can't see it</span></div>
+    <div><b class="it" data-mb>4.6</b><span>megabytes. one file, no installer</span></div>
+    <div><b class="it">12</b><span>visualizers made of dots, all hearing kicks, claps and hats</span></div>
+    <div><b class="it">0</b><span>captchas. likes live in muzika, soundcloud never gets in the way</span></div>
+  </div>
+
+  <section id="what">
+    <div class="two">
+      <h2 class="h2 rv">what is<br><em>muzika.</em></h2>
+      <p class="lead rv">a soundcloud player for windows, made with two rules: it has to look good, and it has to stay out of the way. it streams soundcloud in small pieces so tracks start almost instantly, keeps your likes without captchas, and goes fully quiet in the tray while you play something else.</p>
+    </div>
+  </section>
+
+  <section id="features">
+    <h2 class="h2 rv">everything<br><em>you need. nothing loud.</em></h2>
+    <div class="bento">
+      <div class="card lg c4 rv"><span class="lbl">streaming</span><div class="k it" style="margin-top:18px">~0.3 s</div>
+        <h3>starts before you let go of the click</h3><p>tracks come in small pieces and the next two are already waiting. hover a track and muzika gets it ready.</p></div>
+      <div class="card lg c2 rv"><span class="lbl">likes</span><div style="margin-top:18px" class="heart"><svg viewBox="0 0 24 24"><path d="M12 21l-1.5-1.3C5.4 15.1 2 12.1 2 8.4 2 5.4 4.4 3 7.4 3c1.7 0 3.4.8 4.6 2.1C13.2 3.8 14.9 3 16.6 3 19.6 3 22 5.4 22 8.4c0 3.7-3.4 6.7-8.5 11.3z"/></svg></div>
+        <h3>hearts that just work</h3><p>soundcloud asks apps for captchas. muzika keeps its own likes, right next to yours.</p></div>
+      <div class="card lg c2 rv"><span class="lbl">radio</span><div class="mini" style="margin-top:18px"><i></i><i style="animation-delay:-.2s"></i><i style="animation-delay:-.5s"></i><i style="animation-delay:-.8s"></i><i style="animation-delay:-.35s"></i><i style="animation-delay:-.65s"></i><i style="animation-delay:-.1s"></i></div>
+        <h3>radio from any track</h3><p>one press and it never runs out of music that sounds like it.</p></div>
+      <div class="card lg c4 wr rv"><img src="wrapped.jpg" alt="a month in muzika, wrapped" loading="lazy">
+        <div class="tx"><span class="lbl">wrapped</span><h3>your month on one picture</h3><p>hours, best day, peak hour, top track, top artists. save it or copy it straight into a chat. plus a week map of when you listen and a history of everything that played.</p></div></div>
+      <div class="card lg c3 rv"><span class="lbl">discord</span><img class="disc" src="disc.gif" alt="" loading="lazy" style="margin-top:18px">
+        <h3>your profile says what's on</h3><p>the track, its cover, the time left and a button to listen on soundcloud. one switch, no setup.</p></div>
+      <div class="card lg c3 rv"><span class="lbl">and</span><div class="pills" style="margin-top:18px"><span>fullscreen</span><span>crossfade</span><span>10-band eq</span><span>5 themes</span><span>color from the cover</span><span>playlists</span><span>find people & playlists</span><span>track pages</span><span>backup in one file</span><span>media keys</span><span>updates itself</span></div>
+        <h3>the small things, done right</h3><p>updates download on the loading screen and muzika opens already new. no dialogs, no re-login.</p></div>
+    </div>
+  </section>
+
+  <section id="visualizers">
+    <div class="two">
+      <h2 class="h2 rv">dots that<br><em>hear the beat.</em></h2>
+      <p class="lead rv">muzika listens to three parts of the sound on their own: kicks and 808s, claps and snares, hats. so a wall of bass still shows every new hit. try a few, this one runs on a test beat.</p>
+    </div>
+    <div class="vz lg rv" id="vzBox"><canvas id="vz"></canvas><div class="cov"></div><span class="lbl lb">live preview</span>
+      <div class="sw lg" id="vzSw"><button data-v="burst" class="on">burst</button><button data-v="bars">ring bars</button><button data-v="pulse">pulse</button><button data-v="orbit">orbit</button><button data-v="stars">starfield</button></div></div>
+  </section>
+
+  <section id="install">
+    <h2 class="h2 rv">three steps.<br><em>that's it.</em></h2>
+    <div class="steps">
+      <div class="step lg rv"><span class="n it">1</span><h3>download</h3><p>one file, <code>muzika.exe</code>. put it in its own folder: muzika keeps everything in <code>muzika_data</code> right next to it, never on c:.</p></div>
+      <div class="step lg rv"><span class="n it">2</span><h3>open it</h3><p>windows may say it doesn't know the app. press <code>more info</code> → <code>run anyway</code>. it's open source, you can read every line on github.</p></div>
+      <div class="step lg rv"><span class="n it">3</span><h3>link soundcloud</h3><p>press <code>link soundcloud</code> and sign in. your likes, playlists and feed show up. updates come by themselves from now on.</p></div>
+    </div>
+    <div class="note lg rv"><span class="lbl">needs</span><span>windows 10 or 11 with <b>webview2</b>, which windows already has. nothing else to install.</span></div>
+  </section>
+
+  <section id="faq">
+    <h2 class="h2 rv">questions.</h2>
+    <div class="faq rv">
+      <details><summary>is it free?</summary><p>yes. no ads, no account of its own, no subscription. the code is on github.</p></details>
+      <details><summary>is my soundcloud login safe?</summary><p>muzika signs in through soundcloud's own page and keeps the login encrypted with windows (dpapi) in muzika_data, on your pc only. it is never in backups and never sent anywhere except soundcloud.</p></details>
+      <details><summary>why does windows warn me?</summary><p>the exe isn't signed with a paid certificate, so smartscreen doesn't know it yet. "more info" → "run anyway". github builds every release from the public code.</p></details>
+      <details><summary>will it slow down my games?</summary><p>no. in the tray and behind a game the visualizers and animations stop completely, only the sound keeps going. that's the whole point of muzika.</p></details>
+      <details><summary>can i download tracks?</summary><p>a track page has a download button that saves the stream muzika is already playing. respect the artists: buy and support the ones you love.</p></details>
+      <details><summary>how do updates work?</summary><p>muzika checks once when it starts. a new version downloads on the loading screen and it opens already updated, then shows what's new.</p></details>
+    </div>
+  </section>
+
+  <div class="end">
+    <h2 class="h2 rv">press play.</h2>
+    <div class="row rv">
+      <a class="dl big" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download muzika <small data-ver></small></a>
+    </div>
+  </div>
+
+  <footer>
+    <span>muzika · made by emopunk</span>
+    <div class="ls"><a href="https://github.com/shadeqls-lang/muzika" target="_blank" rel="noopener">github</a><a href="https://t.me/emopunk" target="_blank" rel="noopener">telegram</a><a href="https://discord.gg/VzGdZZ5H8" target="_blank" rel="noopener">discord</a><a href="https://github.com/shadeqls-lang/muzika/releases" target="_blank" rel="noopener">all versions</a></div>
+  </footer>
+</div>
+
+<script>
+const REPO="shadeqls-lang/muzika";
+// newest version and size, straight from github
+fetch("https://api.github.com/repos/"+REPO+"/releases/latest").then(r=>r.ok?r.json():null).then(d=>{
+  if(!d) return; const a=(d.assets||[]).find(x=>/\.exe$/i.test(x.name)); const v=(d.tag_name||"").replace(/^v/i,"");
+  document.querySelectorAll("[data-ver]").forEach(e=>e.textContent=v?"v"+v:"");
+  if(a){ const mb=(a.size/1048576).toFixed(1);
+    document.querySelectorAll("[data-size]").forEach(e=>e.textContent=mb+" mb");
+    document.querySelectorAll("[data-mb]").forEach(e=>e.textContent=mb);
+    document.querySelectorAll("[data-dl]").forEach(e=>e.href=a.browser_download_url); }
+}).catch(()=>{});
+
+// mouse with velocity, shared by every dot system
+const M={x:-1e4,y:-1e4,vx:0,vy:0,t:0};
+addEventListener("pointermove",e=>{ const n=performance.now(), dt=Math.max(8,n-M.t);
+  if(M.t&&n-M.t<120){ M.vx=M.vx*.5+(e.clientX-M.x)/dt*1000*.5; M.vy=M.vy*.5+(e.clientY-M.y)/dt*1000*.5; }
+  M.x=e.clientX; M.y=e.clientY; M.t=n; },{passive:true});
+const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.floor(h); };
+
+/* ---------- hero: "muzika" made of dots you can throw around ---------- */
+(function(){
+  const cv=document.getElementById("dots"), c=cv.getContext("2d"); let W,H,dpr,P=[],G=4,run=false,last=0,born=0,vis=true;
+  function build(){
+    dpr=Math.min(devicePixelRatio||1,2); W=cv.clientWidth; H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+    const fs=Math.min(W*.27,H*.42), off=document.createElement("canvas"); off.width=W; off.height=H;
+    const g=off.getContext("2d",{willReadFrequently:true}); g.fillStyle="#fff"; g.textAlign="center"; g.textBaseline="middle";
+    g.font=`700 ${fs}px "SF Pro Display","Inter Tight","Segoe UI",sans-serif`; try{ g.letterSpacing=(-.07*fs)+"px"; }catch(e){}
+    g.fillText("muzika",W/2,H*.38);
+    G=Math.max(3,Math.round(fs/64)); const d=g.getImageData(0,0,W,H).data, T=[];
+    for(let y=0;y<H;y+=G) for(let x=0;x<W;x+=G) if(d[(y*W+x)*4+3]>130) T.push([x,y]);
+    const old=P; P=T.map((t,i)=>{ const o=old[i]; if(o){ o.tx=t[0]; o.ty=t[1]; return o; }
+      const a=Math.random()*Math.PI*2, r=Math.max(W,H)*(.4+Math.random()*.5);
+      return {tx:t[0],ty:t[1],x:W/2+Math.cos(a)*r,y:H*.38+Math.sin(a)*r,vx:0,vy:0,de:Math.random()*.6}; });
+    born=performance.now(); go();
+  }
+  function step(now){
+    if(!vis){ run=false; return; }
+    const dt=Math.min(.033,(now-last)/1000||.016); last=now; const T=(now-born)/1000;
+    const sp=Math.hypot(M.vx,M.vy), R=90+Math.min(130,sp*.07), live=performance.now()-M.t<80&&sp>40, r=cv.getBoundingClientRect();
+    M.vx*=.9; M.vy*=.9; let moving=false;
+    c.clearRect(0,0,W,H); c.fillStyle="#ececec"; c.beginPath(); const sz=Math.max(2,Math.round(G*.62));
+    for(const p of P){
+      if(T<p.de){ moving=true; continue; }
+      const K=T<1.6?30:34, D=T<1.6?8:7.5;
+      p.vx+=((p.tx-p.x)*K-p.vx*D)*dt; p.vy+=((p.ty-p.y)*K-p.vy*D)*dt;
+      if(live){ const dx=p.x-(M.x-r.left), dy=p.y-(M.y-r.top), dd=dx*dx+dy*dy; if(dd<R*R){ const d=Math.sqrt(dd)||1, f=1-d/R;
+        p.vx+=(M.vx*.9+dx/d*sp*.5)*f*dt*14; p.vy+=(M.vy*.9+dy/d*sp*.5)*f*dt*14; const v=Math.hypot(p.vx,p.vy); if(v>4000){ p.vx*=4000/v; p.vy*=4000/v; } } }
+      p.x+=p.vx*dt; p.y+=p.vy*dt;
+      if(!moving&&(Math.abs(p.vx)+Math.abs(p.vy)>3||Math.abs(p.tx-p.x)+Math.abs(p.ty-p.y)>.6)) moving=true;
+      c.rect(Math.round(p.x),Math.round(p.y),sz,sz);
+    }
+    c.fill();
+    if(T>2.2) document.getElementById("hint").classList.add("on");
+    if(!moving&&!live){ run=false; return; } requestAnimationFrame(step);
+  }
+  function go(){ if(run) return; run=true; last=performance.now(); requestAnimationFrame(step); }
+  addEventListener("pointermove",()=>{ if(vis) go(); },{passive:true});
+  new IntersectionObserver(e=>{ vis=e[0].isIntersecting; if(vis) go(); }).observe(cv);
+  let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(build,150); });
+  (document.fonts?document.fonts.ready:Promise.resolve()).then(build);
+})();
+
+/* ---------- the app screenshot straightens up as you scroll ---------- */
+(function(){ const fr=document.getElementById("fr");
+  const f=()=>{ const r=fr.getBoundingClientRect(), k=Math.max(0,Math.min(1,1-(r.top-innerHeight*.15)/(innerHeight*.75)));
+    fr.style.setProperty("--rx",(10*(1-k)).toFixed(2)+"deg"); fr.style.setProperty("--sc",(.94+.06*k).toFixed(3)); };
+  addEventListener("scroll",f,{passive:true}); f(); })();
+
+/* ---------- reveal ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
+document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+
+/* ---------- visualizer demo: the same styles as the app, on a test beat ---------- */
+(function(){
+  const box=document.getElementById("vzBox"), cv=document.getElementById("vz"), c=cv.getContext("2d"); let W,H,dpr,style="burst",vis=false,last=0,lastF=0;
+  const NB=64, S={b:new Float32Array(NB),kick:0,clap:0,beat:false,clapOn:false,lv:0,t:0,dt:0}; let lb=0,lc=0;
+  const band=x=>S.b[Math.max(0,Math.min(NB-1,Math.floor(x*(NB-1))))];
+  function sig(t,dt){
+    const ph=(t/520)%1, ph2=((t/520)+.5)%1;
+    for(let i=0;i<NB;i++){ const v=Math.max(0,.5-i/NB*.42+.16*Math.sin(t/300+i*.45)+.1*Math.sin(t/170+i*1.3))*(i<10?.55+.6*Math.exp(-ph*6):1);
+      S.b[i]+=(v-S.b[i])*Math.min(1,dt*(v>S.b[i]?18:6)); }
+    S.beat=false; S.clapOn=false;
+    if(ph<.1&&t-lb>300){ S.beat=true; lb=t; S.kick=.9; }
+    if(ph2<.08&&t-lc>300&&Math.floor(t/1040)%2===0){ S.clapOn=true; lc=t; S.clap=.7; }
+    S.kick*=Math.exp(-dt*6.5); S.clap*=Math.exp(-dt*9); S.lv=.6+S.kick*.6; S.t=t; S.dt=dt;
+  }
+  const ST={
+    burst:(()=>{ const SEG=140, sp=new Float32Array(SEG).fill(.4), jit=new Float32Array(SEG).map(()=>Math.random()), L=[];
+      for(let s=0;s<SEG;s++) for(let j=0;j<3;j++){ const a=(s+(j+.5)/3+(Math.random()-.5)*.25)/SEG*Math.PI*2; for(let k=0;k<70;k++) L.push([s,.16+k*.0085,Math.cos(a),Math.sin(a),Math.random(),.75+Math.random()*.4]); }
+      return (cc,G,sz)=>{ for(let s=0;s<SEG;s++){ const m=s<SEG/2?s:SEG-1-s, v=band(Math.pow(m/(SEG/2),1.7)*.95); if(Math.random()<S.dt*4) jit[s]=Math.random();
+          const tg=Math.min(.74,.3+v*.44*(.4+jit[s]*1.1)); sp[s]+=(tg-sp[s])*Math.min(1,S.dt*(tg>sp[s]?20:5)); }
+        const R=cc.h*3, core=.19+S.kick*.05, off=Math.floor(((S.t/14000)%1)*SEG);
+        for(const d of L){ const sg=(d[0]+off)%SEG, s=.19+(sp[sg]-.19)*d[5], r=d[1]; if(r<core) continue;
+          const I=r<s?(.18+.82*Math.pow(1-(r-core)/(s-core),1.4))*(.85+S.kick*.4):Math.max(0,1-(r-s)*10)*.22;
+          if(I>d[4]) c.rect(Math.round((cc.x+d[2]*r*R)/G)*G,Math.round((cc.y+d[3]*r*R)/G)*G,sz,sz); } }; })(),
+    bars:(()=>{ const N=120, len=new Float32Array(N), pk=new Float32Array(N);
+      return (cc,G,sz)=>{ const R=cc.h*3, r0=cc.h*1.12, mx=R*.62, rot=S.t/40000*Math.PI*2, st=G*1.5;
+        for(let i=0;i<N;i++){ const m=i<N/2?i:N-1-i, v=band(Math.pow(m/(N/2),1.5)*.92), w=Math.pow(v,1.35)*mx*(.55+S.kick*.6);
+          len[i]+=(w-len[i])*Math.min(1,S.dt*(w>len[i]?22:7)); pk[i]=Math.max(len[i],pk[i]-S.dt*R*.18);
+          const a=i/N*Math.PI*2+rot, ca=Math.cos(a), sa=Math.sin(a);
+          for(let r=0;r<len[i];r+=st){ if(hash(i,r)>1-r/mx*.55) continue; c.rect(Math.round((cc.x+ca*(r0+r))/G)*G,Math.round((cc.y+sa*(r0+r))/G)*G,sz,sz); }
+          if(pk[i]>st) c.rect(Math.round((cc.x+ca*(r0+pk[i]+st*1.6))/G)*G,Math.round((cc.y+sa*(r0+pk[i]+st*1.6))/G)*G,sz,sz); } }; })(),
+    pulse:(()=>{ const rings=[]; let seed=1;
+      return (cc,G,sz)=>{ if(S.beat) rings.push({r:cc.h*1.1,l:1,s:seed++,k:1.5,a:.2}); if(S.clapOn) rings.push({r:cc.h*1.1,l:.7,s:seed++,k:2.4,a:.03}); if(rings.length>14) rings.shift();
+        const ring=(rad,life,sd,amp)=>{ const n=Math.max(24,Math.floor(rad*2*Math.PI/(G*2.2))); for(let k=0;k<n;k++){ if(hash(sd,k)>life) continue; const a=k/n*Math.PI*2, m=Math.abs(((a/(Math.PI*2))+.25)%1-.5)*2;
+          const rr=rad*(1+band(m*.9)*amp); c.rect(Math.round((cc.x+Math.cos(a)*rr)/G)*G,Math.round((cc.y+Math.sin(a)*rr)/G)*G,sz,sz); } };
+        for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.r+=cc.h*2.6*S.dt*g.k*(.6+g.l*.7); g.l-=S.dt*.5; if(g.l<=0||g.r>Math.hypot(W,H)*dpr*.6){ rings.splice(i,1); continue; } ring(g.r,g.l*.95,g.s,g.a*g.l); }
+        ring(cc.h*(1.12+S.kick*.1),.7,0,.03); }; })(),
+    orbit:(()=>{ const RN=7, per=[], ang=new Float32Array(RN), rad=new Float32Array(RN).fill(1);
+      for(let r=0;r<RN;r++){ const n=14+r*7, a=[]; for(let k=0;k<n;k++) a.push(k/n*Math.PI*2+Math.random()*.25); per.push(a); }
+      return (cc,G,sz)=>{ for(let r=0;r<RN;r++){ const f=r/(RN-1), v=band(f*.85), dir=r%2?1:-1; ang[r]+=dir*S.dt*(.12+f*.1+.25+S.kick*.6*(1-f));
+          const w=1+v*.22+S.kick*.35*(1-f*.5); rad[r]+=(w-rad[r])*Math.min(1,S.dt*(w>rad[r]?16:4)); const R=cc.h*(1.25+r*.3)*rad[r];
+          for(let k=0;k<per[r].length;k++){ const a=per[r][k]+ang[r]; for(let t=0;t<3;t++){ const aa=a-dir*t*.035; if(t&&hash(r*31+k,t)>.55) continue;
+            c.rect(Math.round((cc.x+Math.cos(aa)*R)/G)*G,Math.round((cc.y+Math.sin(aa)*R*.92)/G)*G,sz,sz); } } } }; })(),
+    stars:(()=>{ const N=520, X=new Float32Array(N), Y=new Float32Array(N), Z=new Float32Array(N), PZ=new Float32Array(N);
+      const sp=i=>{ const a=Math.random()*Math.PI*2, r=.12+Math.random()*.95; X[i]=Math.cos(a)*r; Y[i]=Math.sin(a)*r; Z[i]=.2+Math.random()*.8; PZ[i]=Z[i]; };
+      for(let i=0;i<N;i++) sp(i);
+      return (cc,G,sz)=>{ const v=(.04+S.lv*.32+S.kick*1.5+S.clap*.7)*S.dt, F=Math.max(cv.width,cv.height)*.32;
+        for(let i=0;i<N;i++){ PZ[i]=Z[i]; Z[i]-=v; if(Z[i]<=.02){ sp(i); Z[i]=1; PZ[i]=1; continue; }
+          const x=cc.x+X[i]/Z[i]*F, y=cc.y+Y[i]/Z[i]*F; if(x<0||y<0||x>cv.width||y>cv.height){ sp(i); Z[i]=1; PZ[i]=1; continue; }
+          const px=cc.x+X[i]/PZ[i]*F, py=cc.y+Y[i]/PZ[i]*F, z=Math.max(1,Math.round(sz*(1.6-Z[i]*1.2))), n=Math.min(6,Math.floor(Math.hypot(x-px,y-py)/(G*1.2)));
+          for(let k=0;k<=n;k++){ const u=n?k/n:0; c.rect(Math.round((x+(px-x)*u)/G)*G,Math.round((y+(py-y)*u)/G)*G,z,z); } } }; })()
+  };
+  function size(){ dpr=Math.min(devicePixelRatio||1,1.5); W=cv.clientWidth; H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; }
+  function frame(t){ if(!vis) return; requestAnimationFrame(frame); if(t-lastF<33) return; const dt=Math.min(.1,(t-last)/1000||.033); last=t; lastF=t;
+    sig(t,dt); const cov=box.querySelector(".cov").getBoundingClientRect(), r=cv.getBoundingClientRect();
+    const cc={x:(cov.left+cov.width/2-r.left)*dpr,y:(cov.top+cov.height/2-r.top)*dpr,h:cov.width/2*dpr}, G=Math.max(2,Math.round(3*dpr)), sz=Math.max(1,Math.round(1.5*dpr));
+    c.clearRect(0,0,cv.width,cv.height); c.fillStyle="#e9e9e9"; c.beginPath(); ST[style](cc,G,sz); c.fill(); }
+  new IntersectionObserver(e=>{ const was=vis; vis=e[0].isIntersecting; if(vis&&!was){ size(); requestAnimationFrame(frame); } }).observe(box);
+  addEventListener("resize",()=>{ if(vis) size(); });
+  document.getElementById("vzSw").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; style=b.dataset.v;
+    document.querySelectorAll("#vzSw button").forEach(x=>x.classList.toggle("on",x===b)); };
+})();
+</script>
+</body>
+</html>
