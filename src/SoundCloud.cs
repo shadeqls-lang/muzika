@@ -205,6 +205,18 @@ namespace Emopunk
             kind = "usertracks"; return Api("/users/" + u + "/tracks?limit=50&linked_partitioning=1");
         }
 
+        // radio: tracks soundcloud considers close to this one
+        public string Related(string id)
+        {
+            string res = null;
+            try { res = Api("/tracks/" + id + "/related?limit=40&linked_partitioning=1"); } catch (Exception ex) { Log.Write("radio related " + id + ": " + ex.Message); }
+            if (res == null || !res.Contains("\"kind\":\"track\""))
+            {
+                try { res = Api("/stations/soundcloud:track-stations:" + id + "/tracks?limit=40"); } catch (Exception ex) { Log.Write("radio station " + id + ": " + ex.Message); if (res == null) throw; }
+            }
+            return res;
+        }
+
         public string Track(string id)
         {
             if (!Regex.IsMatch(id ?? "", "^[0-9]+$")) throw new Exception("bad track");
@@ -354,7 +366,7 @@ namespace Emopunk
 
         public string Cached(string scId)
         {
-            foreach (string ext in new[] { ".mp3", ".m4a", ".opus" })
+            foreach (string ext in new[] { ".mp3", ".m4a", ".aac", ".opus" })
             {
                 string f = Path.Combine(dir, scId + ext);
                 if (File.Exists(f)) { try { File.SetLastAccessTimeUtc(f, DateTime.UtcNow); } catch { } return f; }
@@ -390,83 +402,37 @@ namespace Emopunk
 
         static string Str(Dictionary<string, object> d, string k) { object v; return d != null && d.TryGetValue(k, out v) && v != null ? v.ToString() : ""; }
 
+        // whole track as one file (used when the player can't take pieces): same pieces, glued together
         string Fetch(string scId)
         {
-            Dictionary<string, object> t = js.DeserializeObject(sc.Api("/tracks/" + scId)) as Dictionary<string, object>;
-            if (t == null) throw new Exception("track not found");
-            string auth = Str(t, "track_authorization");
-            object media; t.TryGetValue("media", out media);
-            Dictionary<string, object> md = media as Dictionary<string, object>;
-            object trs = null; if (md != null) md.TryGetValue("transcodings", out trs);
-            System.Collections.IEnumerable list = trs as System.Collections.IEnumerable;
-            if (list == null) throw new Exception("no stream for this track");
-
-            // pick: plain hls mp3 > progressive mp3 > hls aac > hls opus (encrypted go+ streams are skipped)
-            Dictionary<string, object> best = null; int bestRank = 99; string ext = ".mp3";
-            foreach (object o in list)
+            Hls h = Resolve(scId, null, null, false);
+            string ext = h.Mime.StartsWith("audio/mp4") ? ".m4a" : h.Mime == "audio/mpeg" ? ".mp3" : h.Mime == "audio/aac" ? ".aac" : null;
+            if (ext == null) throw new Exception("stream format the player can't glue (" + h.Mime + ")");
+            int n = h.Segs.Count; byte[][] data = new byte[n][]; byte[] init = h.Init != null ? Segment(scId, -1) : null;
+            int nextIdx = -1; Exception fail = null;
+            ThreadStart worker = delegate
             {
-                Dictionary<string, object> tc = o as Dictionary<string, object>;
-                if (tc == null) continue;
-                object fo; tc.TryGetValue("format", out fo);
-                Dictionary<string, object> fmt = fo as Dictionary<string, object>;
-                string proto = Str(fmt, "protocol"), mime = Str(fmt, "mime_type");
-                int rank = 99; string e = ".mp3";
-                if (proto == "hls" && mime.StartsWith("audio/mpeg")) rank = 0;
-                else if (proto == "progressive" && mime.StartsWith("audio/mpeg")) rank = 1;
-                else if (proto == "hls" && mime.Contains("mp4")) { rank = 2; e = ".m4a"; }
-                else if (proto == "hls" && mime.Contains("ogg")) { rank = 3; e = ".opus"; }
-                if (Str(tc, "snipped") == "True" && rank < 99) rank += 10;   // 30s preview only
-                if (rank < bestRank) { bestRank = rank; best = tc; ext = e; }
-            }
-            if (best == null) throw new Exception("this track can't be streamed");
-            Log.Write("stream " + scId + ": using rank " + bestRank + " " + Str(best, "url"));
-
-            string u = Str(best, "url");
-            u += (u.Contains("?") ? "&" : "?") + "client_id=" + sc.Key + (auth.Length > 0 ? "&track_authorization=" + auth : "");
-            string loc = Str(js.DeserializeObject(Net.Send("GET", u, sc.Token)) as Dictionary<string, object>, "url");
-            if (loc.Length == 0) throw new Exception("soundcloud gave no stream link");
-
-            string target = Path.Combine(dir, scId + ext), part = target + ".part";
-            int proto2 = bestRank % 10;
-            if (proto2 == 1) Net.Download(loc, target, null);
-            else
-            {
-                string m3u = Net.Get(loc);
-                if (m3u.Contains("#EXT-X-KEY") && !m3u.Contains("METHOD=NONE")) throw new Exception("protected stream");
-                Uri baseUri = new Uri(loc);
-                List<string> segs = new List<string>();
-                Match init = Regex.Match(m3u, "#EXT-X-MAP:URI=\"([^\"]+)\"");
-                if (init.Success) segs.Add(new Uri(baseUri, init.Groups[1].Value).ToString());
-                foreach (string line in m3u.Split('\n'))
+                while (true)
                 {
-                    string l = line.Trim();
-                    if (l.Length > 0 && !l.StartsWith("#")) segs.Add(new Uri(baseUri, l).ToString());
+                    int i = Interlocked.Increment(ref nextIdx);
+                    if (i >= n || fail != null) return;
+                    try { data[i] = Segment(scId, i); } catch (Exception ex) { fail = ex; return; }
                 }
-                if (segs.Count == 0) throw new Exception("empty stream");
-                byte[][] data = new byte[segs.Count][];
-                int nextIdx = -1; Exception fail = null;
-                ThreadStart worker = delegate
-                {
-                    while (true)
-                    {
-                        int i = Interlocked.Increment(ref nextIdx);
-                        if (i >= segs.Count || fail != null) return;
-                        for (int tries = 0; ; tries++)
-                        {
-                            try { data[i] = Bytes(segs[i]); break; }
-                            catch (Exception ex) { if (tries >= 4) { fail = ex; return; } Thread.Sleep(600); }
-                        }
-                    }
-                };
-                List<Thread> pool = new List<Thread>();
-                for (int k = 0; k < 6; k++) { Thread th = new Thread(worker); th.IsBackground = true; th.Start(); pool.Add(th); }
-                foreach (Thread th in pool) th.Join();
-                if (fail != null) throw new Exception("stream broke off: " + fail.Message);
-                using (FileStream fs = new FileStream(part, FileMode.Create))
-                    foreach (byte[] b in data) fs.Write(b, 0, b.Length);
-                if (File.Exists(target)) File.Delete(target);
-                File.Move(part, target);
+            };
+            List<Thread> pool = new List<Thread>();
+            for (int k = 0; k < 6; k++) { Thread th = new Thread(worker); th.IsBackground = true; th.Start(); pool.Add(th); }
+            foreach (Thread th in pool) th.Join();
+            if (fail != null) throw new Exception("stream broke off: " + fail.Message);
+            string target = Path.Combine(dir, scId + ext), part = target + ".part";
+            using (FileStream fs = new FileStream(part, FileMode.Create))
+            {
+                if (init != null) fs.Write(init, 0, init.Length);
+                foreach (byte[] b in data) fs.Write(b, 0, b.Length);
             }
+            if (File.Exists(target)) File.Delete(target);
+            File.Move(part, target);
+            foreach (string f in Directory.GetFiles(dir, scId + ".s*")) try { File.Delete(f); } catch { }   // pieces no longer needed
+            Log.Write("stream " + scId + ": glued " + n + " pieces (" + h.Mime + ")");
             return target;
         }
 
@@ -514,6 +480,140 @@ namespace Emopunk
             return got;
         }
 
+        // ---------- segment streaming: the player gets the track piece by piece and starts after the first one ----------
+        public class Hls { public string Mime; public List<string> Segs = new List<string>(); public List<double> Durs = new List<double>(); public string Init; public DateTime At; }
+        readonly Dictionary<string, Hls> hls = new Dictionary<string, Hls>();
+        readonly Dictionary<string, object> rlocks = new Dictionary<string, object>();
+
+        object RLock(string id) { lock (rlocks) { object o; if (!rlocks.TryGetValue(id, out o)) { o = new object(); rlocks[id] = o; } return o; } }
+
+        // tc / auth come from the list the user is looking at, which saves one request to soundcloud
+        public Hls Resolve(string scId, string tc, string auth, bool force)
+        {
+            lock (RLock(scId))
+            {
+                Hls h;
+                lock (hls) if (!force && hls.TryGetValue(scId, out h) && (DateTime.UtcNow - h.At).TotalMinutes < 8) return h;
+                // soundcloud dropped mp3 hls (it answers 404), so aac goes first; every candidate is tried in turn.
+                // the link from the page is tried first, the full track info is only fetched when it fails
+                string loc = null, m3u = null, mime = null; Exception last = null;
+                Func<string, string, string, bool> tryOne = delegate(string url, string mt, string au)
+                {
+                    try
+                    {
+                        string u = url + (url.Contains("?") ? "&" : "?") + "client_id=" + sc.Key + (string.IsNullOrEmpty(au) ? "" : "&track_authorization=" + au);
+                        string l2 = Str(js.DeserializeObject(Net.Send("GET", u, sc.Token)) as Dictionary<string, object>, "url");
+                        if (l2.Length == 0) throw new Exception("no stream link");
+                        string body = Net.Get(l2);
+                        if (body.Contains("#EXT-X-KEY") && !body.Contains("METHOD=NONE")) throw new Exception("protected stream");
+                        loc = l2; m3u = body; mime = mt; return true;
+                    }
+                    catch (Exception ex) { last = ex; Log.Write("resolve " + scId + ": " + url.Substring(url.LastIndexOf('/') + 1) + " failed: " + ex.Message); return false; }
+                };
+                bool ok = !force && !string.IsNullOrEmpty(tc) && tc.StartsWith("https://api-v2.soundcloud.com/media/") && tryOne(tc, tc.Contains("mp4") || tc.Contains("aac") ? "audio/mp4" : null, auth);
+                if (!ok)
+                {
+                    Dictionary<string, object> t = js.DeserializeObject(sc.Api("/tracks/" + scId)) as Dictionary<string, object>;
+                    if (t == null) throw new Exception("track not found");
+                    string au2 = Str(t, "track_authorization");
+                    foreach (string[] c in Transcodings(t, true))
+                    {
+                        if (c[0] == tc && !force) continue;
+                        if (tryOne(c[0], c[1], au2)) { ok = true; break; }
+                    }
+                }
+                if (!ok) throw last ?? new Exception("no stream");
+                h = new Hls { At = DateTime.UtcNow };
+                Uri baseUri = new Uri(loc);
+                Match init = Regex.Match(m3u, "#EXT-X-MAP:URI=\"([^\"]+)\"");
+                if (init.Success) h.Init = new Uri(baseUri, init.Groups[1].Value).ToString();
+                // what the pieces really are: fmp4 (init map) / mpeg-ts / raw aac / mp3
+                if (init.Success) h.Mime = "audio/mp4; codecs=\"mp4a.40.2\"";
+                else if (Regex.IsMatch(m3u, "\\.ts(\\?|\\s)")) h.Mime = "video/mp2t; codecs=\"mp4a.40.2\"";
+                else if (mime != null && mime.StartsWith("audio/mpeg")) h.Mime = "audio/mpeg";
+                else if (Regex.IsMatch(m3u, "\\.(aac|adts)(\\?|\\s)")) h.Mime = "audio/aac";
+                else h.Mime = mime != null && mime.Contains("mp4") ? "audio/mp4; codecs=\"mp4a.40.2\"" : "audio/mpeg";
+                double dur = 0;
+                foreach (string line in m3u.Split('\n'))
+                {
+                    string l = line.Trim();
+                    if (l.StartsWith("#EXTINF:")) { double.TryParse(l.Substring(8).Split(',')[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out dur); }
+                    else if (l.Length > 0 && !l.StartsWith("#")) { h.Segs.Add(new Uri(baseUri, l).ToString()); h.Durs.Add(dur); dur = 0; }
+                }
+                if (h.Segs.Count == 0) throw new Exception("empty stream");
+                lock (hls) hls[scId] = h;
+                return h;
+            }
+        }
+
+        // hls aac > hls mp3 > progressive mp3 > hls opus; previews (go+ snippets) last
+        static List<string[]> Transcodings(Dictionary<string, object> t, bool hlsOnly)
+        {
+            List<KeyValuePair<int, string[]>> l = new List<KeyValuePair<int, string[]>>();
+            object media; t.TryGetValue("media", out media);
+            object trs = null; Dictionary<string, object> md = media as Dictionary<string, object>; if (md != null) md.TryGetValue("transcodings", out trs);
+            System.Collections.IEnumerable list = trs as System.Collections.IEnumerable;
+            if (list != null)
+                foreach (object o in list)
+                {
+                    Dictionary<string, object> c = o as Dictionary<string, object>; if (c == null) continue;
+                    object fo; c.TryGetValue("format", out fo); Dictionary<string, object> f = fo as Dictionary<string, object>;
+                    string proto = Str(f, "protocol"), mt = Str(f, "mime_type");
+                    int rank;
+                    if (proto == "hls" && mt.Contains("mp4")) rank = 0;
+                    else if (proto == "hls" && mt.StartsWith("audio/mpeg")) rank = 1;
+                    else if (proto == "progressive" && mt.StartsWith("audio/mpeg") && !hlsOnly) rank = 2;
+                    else if (proto == "hls" && mt.Contains("ogg") && !hlsOnly) rank = 3;
+                    else continue;
+                    if (Str(c, "snipped") == "True") rank += 10;
+                    l.Add(new KeyValuePair<int, string[]>(rank, new[] { Str(c, "url"), mt, proto }));
+                }
+            return l.OrderBy(x => x.Key).Select(x => x.Value).ToList();
+        }
+
+        public string ResolveJson(string scId, string tc, string auth)
+        {
+            if (Cached(scId) != null) return "{\"id\":\"" + scId + "\",\"cached\":true}";
+            Hls h = Resolve(scId, tc, auth, false);
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"id\":\"").Append(scId).Append("\",\"cached\":false,\"mime\":").Append(js.Serialize(h.Mime)).Append(",\"init\":").Append(h.Init != null ? "true" : "false").Append(",\"durs\":[");
+            for (int i = 0; i < h.Durs.Count; i++) { if (i > 0) sb.Append(','); sb.Append(h.Durs[i].ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)); }
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        // one piece of the track; pieces are kept on disk, so replays don't touch the network
+        public byte[] Segment(string scId, int i)
+        {
+            string f = Path.Combine(dir, scId + (i < 0 ? ".sinit" : ".s" + i));
+            if (File.Exists(f)) { try { File.SetLastAccessTimeUtc(f, DateTime.UtcNow); return File.ReadAllBytes(f); } catch { } }
+            byte[] b = null;
+            for (int attempt = 0; attempt < 3 && b == null; attempt++)
+            {
+                Hls h = Resolve(scId, null, null, attempt > 0);
+                string url = i < 0 ? h.Init : (i < h.Segs.Count ? h.Segs[i] : null);
+                if (url == null) throw new Exception("no such piece");
+                try { b = Bytes(url); }
+                catch (Exception ex) { Log.Write("segment " + scId + "/" + i + ": " + ex.Message); if (attempt == 2) throw; Thread.Sleep(300); }
+            }
+            try { string tmp = f + ".part"; File.WriteAllBytes(tmp, b); if (File.Exists(f)) File.Delete(f); File.Move(tmp, f); } catch { }
+            return b;
+        }
+
+        // get ready before the click: resolve the stream and fetch the first pieces
+        public void Warm(string scId, string tc, string auth, int pieces)
+        {
+            if (Cached(scId) != null) return;
+            try
+            {
+                Hls h = Resolve(scId, tc, auth, false);
+                if (h.Init != null) Segment(scId, -1);
+                for (int i = 0; i < Math.Min(pieces, h.Segs.Count); i++) Segment(scId, i);
+            }
+            catch (Exception ex) { Log.Write("warm " + scId + ": " + ex.Message); }
+            Trim();
+        }
+
         static byte[] Bytes(string url)
         {
             HttpWebRequest r = (HttpWebRequest)WebRequest.Create(url);
@@ -554,5 +654,206 @@ namespace Emopunk
         }
 
         public void TrimNow() { Trim(); }
+    }
+
+    // covers and avatars: fetched by the app (many connections at once) and kept on disk
+    class ImgCache
+    {
+        readonly string dir;
+        public ImgCache(string folder)
+        {
+            dir = folder; Directory.CreateDirectory(dir);
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    FileInfo[] fs = new DirectoryInfo(dir).GetFiles().OrderBy(f => f.LastAccessTimeUtc).ToArray();
+                    long total = fs.Sum(f => f.Length);
+                    foreach (FileInfo f in fs) { if (total < 300L * 1024 * 1024) break; total -= f.Length; try { f.Delete(); } catch { } }
+                    foreach (FileInfo f in fs) if (f.Name.EndsWith(".part")) try { f.Delete(); } catch { }
+                }
+                catch { }
+            });
+        }
+        public string Path_(string url)
+        {
+            using (System.Security.Cryptography.SHA1 sha = System.Security.Cryptography.SHA1.Create())
+            {
+                byte[] h = sha.ComputeHash(Encoding.UTF8.GetBytes(url));
+                StringBuilder sb = new StringBuilder(); for (int i = 0; i < 10; i++) sb.Append(h[i].ToString("x2"));
+                return Path.Combine(dir, sb.ToString());
+            }
+        }
+        public byte[] Get(string url)
+        {
+            string f = Path_(url);
+            if (File.Exists(f)) return File.ReadAllBytes(f);
+            byte[] b = null;
+            for (int k = 0; k < 3 && b == null; k++)
+            {
+                try
+                {
+                    HttpWebRequest r = (HttpWebRequest)WebRequest.Create(url);
+                    r.UserAgent = Net.UA; r.Timeout = 15000; r.ReadWriteTimeout = 15000;
+                    using (HttpWebResponse resp = (HttpWebResponse)r.GetResponse())
+                    using (Stream s = resp.GetResponseStream())
+                    using (MemoryStream m = new MemoryStream()) { s.CopyTo(m); b = m.ToArray(); }
+                }
+                catch (WebException ex)
+                {
+                    HttpWebResponse hr = ex.Response as HttpWebResponse;
+                    if (hr != null && (int)hr.StatusCode == 404) return null;
+                    Thread.Sleep(300);
+                }
+            }
+            if (b == null) return null;
+            try { File.WriteAllBytes(f + ".part", b); if (File.Exists(f)) File.Delete(f); File.Move(f + ".part", f); } catch { }
+            return b;
+        }
+    }
+
+    // checks the github repo for a newer muzika.exe, downloads it in the background, swaps it in on restart/exit
+    class Updater
+    {
+        readonly string cfgFile, exe, next;
+        public string Repo = "shadeqls-lang/muzika";
+        public bool Auto = true;
+        public string NewVersion;
+        public bool Ready { get { return NewVersion != null && File.Exists(next); } }
+        public Action<string, string, double> OnState;
+        int busy;
+
+        public Updater(string data)
+        {
+            cfgFile = Path.Combine(data, "update.json");
+            exe = System.Windows.Forms.Application.ExecutablePath; next = exe + ".new";
+            try
+            {
+                if (File.Exists(cfgFile))
+                {
+                    Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(cfgFile)) as Dictionary<string, object>;
+                    object v;
+                    if (d != null && d.TryGetValue("repo", out v) && v != null && Regex.IsMatch(v.ToString(), "^[\\w.-]+/[\\w.-]+$")) Repo = v.ToString();
+                    if (d != null && d.TryGetValue("auto", out v) && v is bool) Auto = (bool)v;
+                    if (d != null && d.TryGetValue("ready", out v) && v != null && File.Exists(next) && Newer(v.ToString(), Program.Version)) NewVersion = v.ToString();
+                }
+            }
+            catch { }
+            if (NewVersion == null) try { if (File.Exists(next)) File.Delete(next); } catch { }
+        }
+
+        void SaveCfg()
+        {
+            try { File.WriteAllText(cfgFile, new JavaScriptSerializer().Serialize(new { repo = Repo, auto = Auto, ready = NewVersion })); } catch { }
+        }
+
+        public void Configure(string repo, bool auto)
+        {
+            if (!string.IsNullOrEmpty(repo))
+            {
+                repo = Regex.Replace(repo.Trim(), "^https?://github\\.com/", "").Trim('/');
+                if (Regex.IsMatch(repo, "^[\\w.-]+/[\\w.-]+$")) Repo = repo;
+            }
+            Auto = auto; SaveCfg();
+            State(Ready ? "ready" : "idle", NewVersion, 0);
+        }
+
+        void State(string s, string v, double p) { Action<string, string, double> cb = OnState; if (cb != null) try { cb(s, v, p); } catch { } }
+
+        static int[] Parse(string v)
+        {
+            MatchCollection ms = Regex.Matches(v ?? "", "\\d+");
+            return ms.Cast<Match>().Select(m => int.Parse(m.Value)).ToArray();
+        }
+        public static bool Newer(string a, string b)
+        {
+            int[] x = Parse(a), y = Parse(b);
+            for (int i = 0; i < Math.Max(x.Length, y.Length); i++)
+            {
+                int p = i < x.Length ? x[i] : 0, q = i < y.Length ? y[i] : 0;
+                if (p != q) return p > q;
+            }
+            return false;
+        }
+
+        public void Start()
+        {
+            Thread t = new Thread(delegate()
+            {
+                Thread.Sleep(8000);   // let the player settle first
+                while (true)
+                {
+                    if (Auto) Check(false);
+                    Thread.Sleep(TimeSpan.FromHours(6));
+                }
+            });
+            t.IsBackground = true; t.Start();
+        }
+
+        public void CheckNow() { ThreadPool.QueueUserWorkItem(delegate { Check(true); }); }
+
+        // finds: latest release with an .exe asset, or version.txt + muzika.exe in the repo itself
+        void Check(bool manual)
+        {
+            if (Interlocked.Exchange(ref busy, 1) == 1) return;
+            try
+            {
+                if (Ready) { State("ready", NewVersion, 1); return; }
+                State("checking", null, 0);
+                string ver = null, url = null;
+                try
+                {
+                    string rel = Net.Get("https://api.github.com/repos/" + Repo + "/releases/latest");
+                    Dictionary<string, object> d = new JavaScriptSerializer().DeserializeObject(rel) as Dictionary<string, object>;
+                    object tag, assets; d.TryGetValue("tag_name", out tag); d.TryGetValue("assets", out assets);
+                    System.Collections.IEnumerable al = assets as System.Collections.IEnumerable;
+                    if (tag != null && al != null)
+                        foreach (object o in al)
+                        {
+                            Dictionary<string, object> a = o as Dictionary<string, object>; object n, u;
+                            if (a != null && a.TryGetValue("name", out n) && n != null && n.ToString().EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && a.TryGetValue("browser_download_url", out u))
+                            { ver = tag.ToString(); url = u.ToString(); break; }
+                        }
+                }
+                catch { }
+                if (url == null)
+                    foreach (string br in new[] { "main", "master" })
+                    {
+                        try
+                        {
+                            string v = Net.Get("https://raw.githubusercontent.com/" + Repo + "/" + br + "/version.txt").Trim();
+                            if (Parse(v).Length > 0) { ver = v; url = "https://raw.githubusercontent.com/" + Repo + "/" + br + "/muzika.exe"; break; }
+                        }
+                        catch { }
+                    }
+                if (url == null) { State(manual ? "nothing" : "idle", null, 0); Log.Write("update: nothing found in " + Repo); return; }
+                if (!Newer(ver, Program.Version)) { State(manual ? "latest" : "idle", ver, 0); return; }
+                State("downloading", ver, 0);
+                string tmp = next + ".dl";
+                Net.Download(url, tmp, delegate(long done, long total) { State("downloading", ver, total > 0 ? (double)done / total : 0); });
+                byte[] head = new byte[2];
+                using (FileStream fs = File.OpenRead(tmp)) fs.Read(head, 0, 2);
+                if (head[0] != 'M' || head[1] != 'Z' || new FileInfo(tmp).Length < 500000) { File.Delete(tmp); throw new Exception("downloaded file is not a program"); }
+                if (File.Exists(next)) File.Delete(next);
+                File.Move(tmp, next);
+                NewVersion = Regex.Replace(ver, "^[vV]", ""); SaveCfg();
+                Log.Write("update: v" + NewVersion + " downloaded");
+                State("ready", NewVersion, 1);
+            }
+            catch (Exception ex) { Log.Write("update: " + ex.Message); State("error", ex.Message, 0); }
+            finally { Interlocked.Exchange(ref busy, 0); }
+        }
+
+        // a running exe can be renamed on windows: old one steps aside, new one takes its name
+        public void Swap()
+        {
+            if (!Ready) return;
+            string old = exe + ".old";
+            try { if (File.Exists(old)) File.Delete(old); } catch { }
+            File.Move(exe, old);
+            try { File.Move(next, exe); }
+            catch { File.Move(old, exe); throw; }
+            NewVersion = null; SaveCfg();
+        }
     }
 }

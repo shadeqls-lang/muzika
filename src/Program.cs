@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -31,17 +32,30 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
+        public const string Version = "0.2.0";
+        public static Mutex Single;
+        public static bool JustUpdated;
+
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // one copy only: a second launch just brings the running player to front
             bool created;
+            bool restarted = args != null && args.Any(a => a == "--updated" || a == "--restart");
+            JustUpdated = args != null && args.Contains("--updated");
             Mutex single = new Mutex(true, "muzika-player-single-instance", out created);
+            if (!created && restarted)
+            {
+                // the old copy is closing right now: wait for it
+                try { created = single.WaitOne(10000); } catch (AbandonedMutexException) { created = true; }
+            }
             if (!created)
             {
                 try { EventWaitHandle.OpenExisting("muzika-player-show").Set(); } catch { }
                 return;
             }
+            Single = single;
+            try { string prevExe = Application.ExecutablePath + ".old"; if (File.Exists(prevExe)) File.Delete(prevExe); } catch { }
             ShowSignal = new EventWaitHandle(false, EventResetMode.AutoReset, "muzika-player-show");
 
             Root = AppDomain.CurrentDomain.BaseDirectory;
@@ -130,9 +144,12 @@ namespace Emopunk
         JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
         bool ready, exiting;
         NotifyIcon tray;
+        Updater upd;
+        bool restarting, noFlush;
         DiscordRpc rpc;
         SoundCloud sc;
         ScStream scs;
+        ImgCache imgs;
         CoreWebView2Environment envRef;
         string rpcState = "off";
         ToolStripMenuItem miPlay;
@@ -173,9 +190,12 @@ namespace Emopunk
             sc = new SoundCloud(Program.Data);
             Log.File_ = Path.Combine(Program.Data, "log.txt");
             scs = new ScStream(sc, Program.Data);
+            imgs = new ImgCache(Path.Combine(Program.Data, "img"));
             scs.Tools = Path.Combine(Program.Data, "tools");
             sc.OnLoggedOut = delegate { UI(delegate { PostRaw("{\"type\":\"scMe\",\"me\":null}"); Post(new { type = "toast", text = "soundcloud login expired" }); }); };
             rpc = new DiscordRpc();
+            upd = new Updater(Program.Data);
+            upd.OnState = delegate(string st, string ver, double pct) { UI(delegate { Post(new { type = "update", state = st, ver = ver, pct = pct, cur = Program.Version, repo = upd.Repo, auto = upd.Auto }); }); };
             rpc.OnState = delegate(string st)
             {
                 rpcState = st;
@@ -324,6 +344,57 @@ namespace Emopunk
             if (err != null) Post(new { type = "scLikeFail", id = id, on = on, text = err });
         }
 
+        // ---------- updates / restart ----------
+        void Restart(string arg)
+        {
+            restarting = true;
+            // the new copy waits until this one has fully exited (the mutex is freed with the process)
+            try { Process.Start(new ProcessStartInfo(Application.ExecutablePath, arg) { UseShellExecute = false, WorkingDirectory = Program.Root }); } catch { }
+            ExitApp();
+        }
+
+        void ApplyUpdate()
+        {
+            if (!upd.Ready) return;
+            try { upd.Swap(); }
+            catch (Exception ex) { Post(new { type = "toast", text = "update failed: " + ex.Message }); return; }
+            Restart("--updated");
+        }
+
+        // bring the library, stats and soundcloud login over from another muzika folder
+        void ImportData()
+        {
+            using (FolderBrowserDialog d = new FolderBrowserDialog())
+            {
+                d.Description = "pick your old muzika folder (the one with muzika_data inside)";
+                d.ShowNewFolderButton = false;
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                string src = d.SelectedPath;
+                if (Directory.Exists(Path.Combine(src, "muzika_data"))) src = Path.Combine(src, "muzika_data");
+                else if (Directory.Exists(Path.Combine(src, "emopunk_data"))) src = Path.Combine(src, "emopunk_data");
+                if (!File.Exists(Path.Combine(src, "library.json")) && !File.Exists(Path.Combine(src, "sc_auth.bin")))
+                { Post(new { type = "toast", text = "no muzika data in that folder" }); return; }
+                if (string.Equals(Path.GetFullPath(src).TrimEnd('\\'), Path.GetFullPath(Program.Data).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                { Post(new { type = "toast", text = "that's this folder already" }); return; }
+                int n = 0;
+                foreach (string f in new[] { "library.json", "history.json", "stats.json", "playlists.json", "sc_auth.bin", "sc_key.txt", "window.txt", "update.json", "tray_hint_shown" })
+                {
+                    string a = Path.Combine(src, f);
+                    if (File.Exists(a)) { try { File.Copy(a, Path.Combine(Program.Data, f), true); n++; } catch { } }
+                }
+                foreach (string dir in new[] { "img", "cache" })
+                {
+                    string a = Path.Combine(src, dir);
+                    if (!Directory.Exists(a)) continue;
+                    Directory.CreateDirectory(Path.Combine(Program.Data, dir));
+                    foreach (string f in Directory.GetFiles(a)) try { string to = Path.Combine(Program.Data, dir, Path.GetFileName(f)); if (!File.Exists(to)) File.Copy(f, to); } catch { }
+                }
+                if (n == 0) { Post(new { type = "toast", text = "nothing could be copied" }); return; }
+                noFlush = true;   // don't write the old in-memory library over what was just copied
+                Restart("--restart");
+            }
+        }
+
         void BeginDrag()
         {
             if (WindowState == FormWindowState.Maximized) return;
@@ -389,6 +460,7 @@ namespace Emopunk
         void ExitApp()
         {
             exiting = true;
+            if (upd.Ready && !restarting) { try { upd.Swap(); } catch { } }   // a downloaded update goes in on the way out
             try { tray.Visible = false; tray.Dispose(); } catch { }
             Close();
         }
@@ -402,7 +474,7 @@ namespace Emopunk
                 return;
             }
             SaveBounds();
-            try { lib.Flush(); } catch { }
+            if (!noFlush) try { lib.Flush(); } catch { }
             try { rpc.Shutdown(); } catch { }
             try { tray.Visible = false; } catch { }
         }
@@ -514,6 +586,54 @@ namespace Emopunk
                     });
                     return;
                 }
+                if (p == "/img")
+                {
+                    string q = new Uri(e.Request.Uri).Query, src = null;
+                    foreach (string kv in q.TrimStart('?').Split('&')) if (kv.StartsWith("u=")) src = Uri.UnescapeDataString(kv.Substring(2));
+                    Uri iu;
+                    if (src == null || !Uri.TryCreate(src, UriKind.Absolute, out iu) || iu.Scheme != "https" || !iu.Host.EndsWith(".sndcdn.com"))
+                    { e.Response = env.CreateWebResourceResponse(null, 404, "Not Found", ""); return; }
+                    string cached = imgs.Path_(src);
+                    if (File.Exists(cached)) { e.Response = env.CreateWebResourceResponse(new MemoryStream(File.ReadAllBytes(cached)), 200, "OK", "Content-Type: " + Mime(src.Split('?')[0]) + "\r\nCache-Control: max-age=31536000"); return; }
+                    CoreWebView2Deferral idef = e.GetDeferral();
+                    Task.Run(() => imgs.Get(src)).ContinueWith(t =>
+                    {
+                        UI(delegate
+                        {
+                            try
+                            {
+                                if (t.IsFaulted || t.Result == null) e.Response = env.CreateWebResourceResponse(null, 502, "Bad Gateway", "");
+                                else e.Response = env.CreateWebResourceResponse(new MemoryStream(t.Result), 200, "OK", "Content-Type: " + Mime(src.Split('?')[0]) + "\r\nCache-Control: max-age=31536000");
+                            }
+                            catch { }
+                            finally { try { idef.Complete(); } catch { } }
+                        });
+                    });
+                    return;
+                }
+                if (p.StartsWith("/scseg/"))
+                {
+                    string[] parts = p.Substring(7).Split('/');
+                    int idx;
+                    if (parts.Length != 2 || !Regex.IsMatch(parts[0], "^[0-9]+$") || !(parts[1] == "init" || int.TryParse(parts[1], out idx)))
+                    { e.Response = env.CreateWebResourceResponse(null, 404, "Not Found", ""); return; }
+                    string sid = parts[0]; int si = parts[1] == "init" ? -1 : int.Parse(parts[1]);
+                    CoreWebView2Deferral def = e.GetDeferral();
+                    Task.Run(() => scs.Segment(sid, si)).ContinueWith(t =>
+                    {
+                        UI(delegate
+                        {
+                            try
+                            {
+                                if (t.IsFaulted || t.Result == null) e.Response = env.CreateWebResourceResponse(null, 502, "Bad Gateway", "");
+                                else e.Response = env.CreateWebResourceResponse(new MemoryStream(t.Result), 200, "OK", "Content-Type: application/octet-stream\r\nCache-Control: no-store\r\nContent-Length: " + t.Result.Length);
+                            }
+                            catch { }
+                            finally { try { def.Complete(); } catch { } }
+                        });
+                    });
+                    return;
+                }
                 if (p.StartsWith("/pcover/") || p == "/avatar")
                 {
                     string f = p == "/avatar" ? Path.Combine(Program.Data, "avatar.jpg") : lib.PlCoverPath(p.Substring(8));
@@ -551,6 +671,9 @@ namespace Emopunk
             if (x == ".wav") return "audio/wav";
             if (x == ".ogg" || x == ".opus" || x == ".oga") return "audio/ogg";
             if (x == ".m4a") return "audio/mp4";
+            if (x == ".aac") return "audio/aac";
+            if (x == ".jpg" || x == ".jpeg") return "image/jpeg";
+            if (x == ".png") return "image/png";
             if (x == ".webm") return "video/webm";
             if (x == ".jpg" || x == ".jpeg") return "image/jpeg";
             return "application/octet-stream";
@@ -606,7 +729,7 @@ namespace Emopunk
             if (m == null) return;
             string cmd = Str(m, "cmd");
 
-            if (cmd == "ready") { ready = true; SendLibrary(); Post(new { type = "window", max = WindowState == FormWindowState.Maximized }); Post(new { type = "discord", state = rpcState }); }
+            if (cmd == "ready") { ready = true; Post(new { type = "update", state = upd.Ready ? "ready" : "idle", ver = upd.NewVersion, pct = 0, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, just = Program.JustUpdated }); upd.Start(); SendLibrary(); Post(new { type = "window", max = WindowState == FormWindowState.Maximized }); Post(new { type = "discord", state = rpcState }); }
             else if (cmd == "discord") { rpc.Configure(Str(m, "on") == "True", Str(m, "id"), Str(m, "gif")); Post(new { type = "discord", state = rpcState }); }
             else if (cmd == "drag") BeginDrag();
             else if (cmd == "max") ToggleMax();
@@ -681,6 +804,31 @@ namespace Emopunk
                 Post(new { type = "cache", bytes = scs.Size(), limit = scs.Limit });
                 Post(new { type = "toast", text = "cache cleared" });
             }
+            else if (cmd == "scResolve")
+            {
+                string rid = Str(m, "id"), tc = Str(m, "tc"), au = Str(m, "auth");
+                if (Regex.IsMatch(rid, "^[0-9]+$"))
+                    ScCall((int)Num(m, "req"), delegate { return new[] { "resolve", scs.ResolveJson(rid, tc, au) }; });
+            }
+            else if (cmd == "scWarm")
+            {
+                string wid = Str(m, "id"), tc = Str(m, "tc"), au = Str(m, "auth"); int n = (int)Num(m, "n");
+                if (Regex.IsMatch(wid, "^[0-9]+$")) ThreadPool.QueueUserWorkItem(delegate { scs.Warm(wid, tc, au, Math.Max(1, Math.Min(n, 4))); });
+            }
+            else if (cmd == "scRadio")
+            {
+                string rid = Str(m, "id");
+                if (Regex.IsMatch(rid, "^[0-9]+$")) ScCall((int)Num(m, "req"), delegate { return new[] { "radio", sc.Related(rid) }; });
+            }
+            else if (cmd == "plSave")
+            {
+                object pls; m.TryGetValue("playlists", out pls);
+                lib.SavePlaylists(pls, null);
+            }
+            else if (cmd == "updCheck") upd.CheckNow();
+            else if (cmd == "updCfg") upd.Configure(Str(m, "repo"), Str(m, "auto") == "True");
+            else if (cmd == "updApply") BeginInvoke((MethodInvoker)ApplyUpdate);
+            else if (cmd == "importData") BeginInvoke((MethodInvoker)ImportData);
             else if (cmd == "scPrefetch")
             {
                 string pid = Str(m, "id");

@@ -1,0 +1,13 @@
+# built program (published through releases, not the repo)
+muzika.exe
+muzika.exe.old
+muzika.exe.new
+muzika.exe.new.dl
+
+# personal data: login, library, stats, cache. never commit this
+muzika_data/
+emopunk_data/
+
+# build leftovers
+*.part
+out/
