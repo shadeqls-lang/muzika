@@ -61,5 +61,4 @@ found a bug or have an idea?
 
 <sub>muzika is an unofficial fan-made client. not affiliated with or endorsed by soundcloud. soundcloud is a trademark of soundcloud global limited & co. kg.</sub>
 
-u cant trust me cuz im not a hoe and everything are open sourse n**** u can see it 
-it runs LOCALLY bro give me damn stars for this shit
+
