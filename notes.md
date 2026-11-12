@@ -1,4 +1,12 @@
-## new in 0.4.2
+## new in 0.4.3
+- **track page**: click the cover (or the small one in the player). description, plays, likes, release date, tags, how much you listened, copy link, download, radio and tracks that sound like it. double-click still goes fullscreen
+- **profiles, redone**: the artist sits on the left with stats and how much you listened to them, their tracks fill the right, as a list or covers
+- **this number is alive**: swipe the mouse through it
+- no scrollbars anywhere, scrolling still works
+- the window has no dark frame anymore, its edge takes the theme color
+- the playing track in covers view gets a clean ring and a little equalizer
+
+## 0.4.2
 - **wrapped**: stats → "your month, wrapped". one picture with your hours, best day, peak hour, top track, top tracks and artists. save it or copy it and paste anywhere. older months are there too
 - **history**: library → history. everything you played in the last 30 days, newest first, so the track from radio is never lost
 - **color mode**: the switch in the player now also tints muzika with the color of the cover that is playing. off keeps everything black and white

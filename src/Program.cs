@@ -33,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.4.2";
+        public const string Version = "0.4.3";
         public static Mutex Single;
         public static bool JustUpdated;
 
@@ -228,6 +228,7 @@ namespace Emopunk
             {
                 int on = 1; DwmSetWindowAttribute(Handle, 20, ref on, 4);   // dark mode for system bits
                 int round = 2; DwmSetWindowAttribute(Handle, 33, ref round, 4); // rounded corners on Win11
+                int noBorder = unchecked((int)0xFFFFFFFE); DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);   // no system outline
             }
             catch { }
             try { RegisterHotKey(Handle, 1, 0, 0xB3); RegisterHotKey(Handle, 2, 0, 0xB0); RegisterHotKey(Handle, 3, 0, 0xB1); } catch { }
@@ -456,6 +457,28 @@ namespace Emopunk
                 catch (Exception ex) { Post(new { type = "toast", text = "restore failed: " + ex.Message }); return; }
                 noFlush = true;   // the in-memory library must not overwrite the restored one
                 Restart("--restart");
+            }
+        }
+
+        // ---------- save a track: the same glued stream the player uses, copied where you want it ----------
+        async void ScDownload(string id, string name)
+        {
+            if (!Regex.IsMatch(id ?? "", "^[0-9]+$")) return;
+            Post(new { type = "toast", text = "getting the track ready" });
+            string f = null, err = null;
+            try { f = await Task.Run(() => scs.Ensure(id)); } catch (Exception ex) { err = ex.Message; }
+            if (f == null || !File.Exists(f)) { Post(new { type = "toast", text = "couldn't download: " + (err ?? "no file") }); return; }
+            using (SaveFileDialog d = new SaveFileDialog())
+            {
+                string ext = Path.GetExtension(f);
+                string clean = Regex.Replace(string.IsNullOrEmpty(name) ? id : name, "[\\\\/:*?\"<>|]+", " ").Trim();
+                if (clean.Length > 120) clean = clean.Substring(0, 120);
+                d.Title = "save track";
+                d.FileName = clean + ext;
+                d.Filter = "audio (*" + ext + ")|*" + ext;
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                try { File.Copy(f, d.FileName, true); Post(new { type = "toast", text = "saved" }); }
+                catch (Exception ex) { Post(new { type = "toast", text = "couldn't save: " + ex.Message }); }
             }
         }
 
@@ -1006,6 +1029,13 @@ namespace Emopunk
             else if (cmd == "backupExport") { string ls = Str(m, "ls"); BeginInvoke((MethodInvoker)delegate { BackupExport(ls); }); }
             else if (cmd == "backupImport") BeginInvoke((MethodInvoker)BackupImport);
             else if (cmd == "fs") SetFullscreen(Str(m, "on") == "True");
+            else if (cmd == "bg")
+            {
+                // the thin resize edge around the page takes the theme color, so the window has no visible frame
+                Match bm = Regex.Match(Str(m, "color"), "^#?([0-9a-fA-F]{6})$");
+                if (bm.Success) { int v = Convert.ToInt32(bm.Groups[1].Value, 16); BackColor = Color.FromArgb((v >> 16) & 255, (v >> 8) & 255, v & 255); }
+            }
+            else if (cmd == "scDownload") ScDownload(Str(m, "id"), Str(m, "name"));
             else if (cmd == "saveImage") { string dt = Str(m, "data"), nm = Str(m, "name"); BeginInvoke((MethodInvoker)delegate { SaveImage(dt, nm, false); }); }
             else if (cmd == "copyImage") { string dt = Str(m, "data"); BeginInvoke((MethodInvoker)delegate { SaveImage(dt, null, true); }); }
             else if (cmd == "updCfg") upd.Configure(Str(m, "repo"), Str(m, "auto") == "True");
