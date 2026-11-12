@@ -33,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.5.0";
+        public const string Version = "0.5.1";
         public static Mutex Single;
         public static bool JustUpdated;
 

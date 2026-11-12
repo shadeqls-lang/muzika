@@ -1377,13 +1377,13 @@ function ensureCtx(){
   if(actx) return;
   try{
     actx=new AudioContext({latencyHint:"playback"});
-    analyser=actx.createAnalyser(); analyser.fftSize=512; analyser.smoothingTimeConstant=.8;
+    analyser=actx.createAnalyser(); analyser.fftSize=512; analyser.smoothingTimeConstant=.72;
     // players -> fade gains -> preamp -> 10 eq bands -> analyser -> speakers
     EQN.pre=actx.createGain();
     EQN.f=EQ_FREQ.map((hz,i)=>{ const f=actx.createBiquadFilter(); f.type=i===0?"lowshelf":i===EQ_FREQ.length-1?"highshelf":"peaking"; f.frequency.value=hz; f.Q.value=1.1; return f; });
     A.forEach((el,i)=>{ const src=actx.createMediaElementSource(el); G[i]=actx.createGain(); src.connect(G[i]); G[i].connect(EQN.pre); });
     let node=EQN.pre; EQN.f.forEach(f=>{ node.connect(f); node=f; }); node.connect(analyser);
-    analyser.connect(actx.destination); applyEq(); freq=new Uint8Array(analyser.frequencyBinCount);
+    analyser.connect(actx.destination); applyEq(); freq=new Uint8Array(analyser.frequencyBinCount); wave=new Uint8Array(analyser.fftSize);
   }catch(e){}
 }
 let suspT;
@@ -1650,7 +1650,9 @@ function sizeViz(){
 }
 // ---- the signal every style reads ----
 const NB=64;
-function mkSig(){ return {b:new Float32Array(NB),bass:0,mid:0,high:0,energy:0,avg:.2,beat:false,lastBeat:0,t:0,dt:0,live:false}; }
+const WN=512; let wave=null;
+function mkSig(){ return {b:new Float32Array(NB),w:new Float32Array(WN),bass:0,mid:0,high:0,energy:0,avg:.2,beat:false,lastBeat:0,t:0,dt:0,live:false,
+  low:0,lowAvg:.2,lowVar:.01,prevLow:0,kick:0}; }
 const SIG=mkSig();
 function readSig(S,t,dt,live,fake){
   const B=S.b;
@@ -1661,14 +1663,25 @@ function readSig(S,t,dt,live,fake){
     else v=.2+.1*Math.sin(t/900+i*.3)+.06*Math.sin(t/430+i*.7);
     B[i]+=(v-B[i])*Math.min(1,dt*(v>B[i]?18:6));
   }
+  // kick: the raw low end jumps well above its recent level (not the smoothed bands, those blur the hit)
+  let lo=0;
+  if(live){ for(let k=1;k<5;k++) lo+=freq[k]; lo/=4*255; }
+  else if(fake){ const ph=(t/600)%1; lo=.35+.55*Math.exp(-ph*9); }
+  const rise=lo-S.prevLow; S.prevLow=lo;
+  const dev=lo-S.lowAvg; S.lowAvg+=dev*Math.min(1,dt*2.2); S.lowVar+=(dev*dev-S.lowVar)*Math.min(1,dt*2.2);
+  S.kick*=Math.exp(-dt*6.5);
   let a=0; for(let i=0;i<4;i++) a+=B[i]; S.bass=a/4;
   a=0; for(let i=8;i<24;i++) a+=B[i]; S.mid=a/16;
   a=0; for(let i=30;i<60;i++) a+=B[i]; S.high=a/30;
   S.energy+=(S.bass-S.energy)*Math.min(1,dt*10);
   S.avg+=(S.bass-S.avg)*Math.min(1,dt*1.6);
   S.beat=false;
-  if((live||fake)&&S.bass>S.avg*1.22&&S.bass>.28&&t-S.lastBeat>240){ S.beat=true; S.lastBeat=t; }
-  if(!live&&!fake&&t-S.lastBeat>1400){ S.beat=true; S.lastBeat=t; }     // a slow breath when nothing plays
+  if((live||fake)&&lo>.3&&dev>Math.max(.07,Math.sqrt(S.lowVar)*1.35)&&rise>.025&&t-S.lastBeat>260){
+    S.beat=true; S.lastBeat=t; S.kick=Math.min(1,.55+dev*2.6); }
+  if(!live&&!fake&&t-S.lastBeat>1600){ S.beat=true; S.lastBeat=t; S.kick=.35; }     // a slow breath when nothing plays
+  // the waveform, for the scopes
+  if(live&&wave){ analyser.getByteTimeDomainData(wave); for(let i=0;i<WN;i++) S.w[i]+=((wave[i]-128)/128-S.w[i])*.85; }
+  else for(let i=0;i<WN;i++){ const x=i/WN; S.w[i]=(fake?.5:.12)*(Math.sin(x*Math.PI*6+t/90)*.6+Math.sin(x*Math.PI*17+t/40)*.25*(S.kick+.3)+Math.sin(x*Math.PI*41-t/25)*.1); }
   S.t=t; S.dt=dt; S.live=live;
 }
 const band=(S,x)=>S.b[Math.max(0,Math.min(NB-1,Math.floor(x*(NB-1))))];
@@ -1716,15 +1729,15 @@ const VZS={
   pulse:{name:"pulse",make(){
     const rings=[]; let seed=1;
     return {draw(c,S,cc,G,sz,W,H){
-      if(S.beat) rings.push({r:cc.half*1.1,life:1,seed:seed++,k:.6+S.bass*.9});
+      if(S.beat) rings.push({r:cc.half*1.1,life:1,seed:seed++,k:.7+S.kick*1.1,amp:.06+S.kick*.16});
       if(rings.length>9) rings.shift();
       const far=Math.hypot(W,H)*.6;
       const ring=(rad,life,sd,amp)=>{ const n=Math.max(24,Math.floor(rad*2*Math.PI/(G*2.2)));
         for(let k=0;k<n;k++){ if(hash(sd,k)>life) continue; const a=k/n*Math.PI*2, m=Math.abs(((a/(Math.PI*2))+.25)%1-.5)*2;
           const rr=rad*(1+band(S,m*.9)*amp); c.rect(Math.round((cc.x+Math.cos(a)*rr)/G)*G,Math.round((cc.y+Math.sin(a)*rr)/G)*G,sz,sz); } };
-      for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.r+=(cc.half*1.5+S.energy*cc.half*2.2)*S.dt*g.k; g.life-=S.dt*.42;
-        if(g.life<=0||g.r>far){ rings.splice(i,1); continue; } ring(g.r,g.life*.95,g.seed,.14*g.life); }
-      ring(cc.half*(1.14+S.energy*.08),.75,0,.06);
+      for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.r+=cc.half*2.6*S.dt*g.k*(.6+g.life*.7); g.life-=S.dt*.5;
+        if(g.life<=0||g.r>far){ rings.splice(i,1); continue; } ring(g.r,g.life*.95,g.seed,g.amp*g.life); }
+      ring(cc.half*(1.12+S.kick*.1),.7,0,.025);
     }};
   }},
   // unknown-pleasures lines rolling toward you from under the cover
@@ -1759,14 +1772,14 @@ const VZS={
       if(k!==key){ key=k; P=[]; const maxD=Math.hypot(Math.max(cc.x,W-cc.x),Math.max(cc.y,H-cc.y));
         for(let y=sp/2;y<H;y+=sp) for(let x=sp/2;x<W;x+=sp){ if(Math.abs(x-cc.x)<cc.half*1.08&&Math.abs(y-cc.y)<cc.half*1.08) continue;
           const d=Math.hypot(x-cc.x,y-cc.y)/maxD; P.push(x,y,d,Math.random()); } P.maxD=maxD; }
-      if(S.beat) waves.push({r:0,life:1}); if(waves.length>4) waves.shift();
+      if(S.beat) waves.push({r:0,life:.5+S.kick*.6}); if(waves.length>4) waves.shift();
       for(let i=waves.length-1;i>=0;i--){ const w=waves[i]; w.r+=S.dt*.55; w.life-=S.dt*.6; if(w.life<=0) waves.splice(i,1); }
       // faint grid first, then the lit dots on top
       c.fill(); c.globalAlpha=.06; c.beginPath(); const s1=Math.max(1,Math.round(sz*.75));
       for(let i=0;i<P.length;i+=4) c.rect(Math.round(P[i]),Math.round(P[i+1]),s1,s1);
       c.fill(); c.globalAlpha=1; c.beginPath();
-      for(let i=0;i<P.length;i+=4){ const d=P[i+2]; if(d>.78) continue; let I=band(S,Math.min(1,d*1.4))*(1.15-d*1.2);
-        for(const w of waves){ const q=(d-w.r)/.045; I+=Math.exp(-q*q)*w.life*.75; }
+      for(let i=0;i<P.length;i+=4){ const d=P[i+2]; if(d>.78) continue; let I=Math.max(0,band(S,Math.min(1,d*1.4))-.18)*(1-d*1.1)*.9+S.kick*Math.max(0,.45-d)*.9;
+        for(const w of waves){ const q=(d-w.r)/.04; I+=Math.exp(-q*q)*w.life; }
         if(I<=P[i+3]*.85+.14) continue;
         const z=I>.8?sz*2.2:I>.5?sz*1.6:sz; const zz=Math.max(1,Math.round(z)); c.rect(Math.round(P[i]-zz/2),Math.round(P[i+1]-zz/2),zz,zz); }
     }};
@@ -1784,18 +1797,89 @@ const VZS={
       const want=pv?pv.pic:(cur&&cur.pic)||null; if(want!==src) load(want);
       if(!img||!L) return;
       const side=cc.half*2, cell=side/N, x0=cc.x-cc.half, y0=cc.y-cc.half, light=FX.theme==="paper", colr=FX.color==="color";
-      const kick=S.beat?cc.half*(1.2+S.bass*3.2):0, dt=S.dt;
+      const kick=S.beat?cc.half*(.8+S.kick*3.6):0, dt=S.dt;
       const buckets=colr?new Map():null; if(!colr) c.fillStyle=TC.viz;
-      for(let y=0;y<N;y++){ const sh=(band(S,y/N*.7)-.15)*cell*1.6*Math.sin(S.t/700+y*.45);
+      for(let y=0;y<N;y++){ const sh=Math.max(0,band(S,y/N*.7)-.3)*cell*1.2*Math.sin(S.t/700+y*.45);
         for(let x=0;x<N;x++){ const i=y*N+x, j=i*2, hx=x0+(x+.5)*cell, hy=y0+(y+.5)*cell;
           if(kick){ const dx=hx-cc.x, dy=hy-cc.y, d=Math.hypot(dx,dy)||1, f=hash(x,y)*.6+.4; vel[j]+=dx/d*kick*f; vel[j+1]+=dy/d*kick*f; }
           vel[j]+=(-off[j]*48-vel[j]*8.5)*dt; vel[j+1]+=(-off[j+1]*48-vel[j+1]*8.5)*dt; off[j]+=vel[j]*dt; off[j+1]+=vel[j+1]*dt;
-          const lum=light?1-L[i]:L[i], z=cell*(colr?.5+.42*lum:.22+.74*lum)*(.82+S.energy*.45); if(z<.6) continue;
+          const lum=light?1-L[i]:L[i], z=cell*(colr?.5+.42*lum:.22+.74*lum)*(.86+S.kick*.32); if(z<.6) continue;
           const zz=Math.max(1,Math.round(z)), px=Math.round(hx+off[j]+sh-zz/2), py=Math.round(hy+off[j+1]-zz/2);
           if(colr){ let b=buckets.get(RGB[i]); if(!b) buckets.set(RGB[i],b=[]); b.push(px,py,zz); } else c.rect(px,py,zz,zz); } }
       if(colr){ c.fill(); for(const [col,a] of buckets){ c.fillStyle=col; c.beginPath(); for(let k=0;k<a.length;k+=3) c.rect(a[k],a[k+1],a[k+2],a[k+2]); c.fill(); } c.fillStyle=TC.viz; c.beginPath(); }
     }};
   }},
+  // dots on orbits around the cover: bass swells the rings, highs spin them faster, kicks throw them out
+  orbit:{name:"orbit",make(){
+    const RINGS=7, per=[], ang=new Float32Array(RINGS), rad=new Float32Array(RINGS).fill(1);
+    for(let r=0;r<RINGS;r++){ const n=14+r*7, a=[]; for(let k=0;k<n;k++) a.push(k/n*Math.PI*2+Math.random()*.25); per.push(a); }
+    return {draw(c,S,cc,G,sz){
+      for(let r=0;r<RINGS;r++){
+        const f=r/(RINGS-1), v=band(S,f*.85), dir=r%2?1:-1;
+        ang[r]+=dir*S.dt*(.12+f*.1+S.high*.9+S.kick*.6*(1-f));
+        const want=1+v*.22+S.kick*.35*(1-f*.5); rad[r]+=(want-rad[r])*Math.min(1,S.dt*(want>rad[r]?16:4));
+        const R=cc.half*(1.25+r*.3)*rad[r], tilt=.92;
+        for(let k=0;k<per[r].length;k++){ const a=per[r][k]+ang[r], wob=1+Math.sin(a*3+S.t/900+r)*.02;
+          for(let tr=0;tr<3;tr++){ const aa=a-dir*tr*.035; if(tr&&hash(r*31+k,tr)>.55) continue;
+            c.rect(Math.round((cc.x+Math.cos(aa)*R*wob)/G)*G,Math.round((cc.y+Math.sin(aa)*R*wob*tilt)/G)*G,tr?Math.max(1,sz-1):sz,tr?Math.max(1,sz-1):sz); } }
+      }
+    }};
+  }},
+  // flying through stars out of the cover: speed follows the music, a kick is a jump
+  stars:{name:"starfield",make(){
+    const N=520, X=new Float32Array(N), Y=new Float32Array(N), Z=new Float32Array(N), PZ=new Float32Array(N);
+    const spawn=i=>{ const a=Math.random()*Math.PI*2, r=.12+Math.random()*.95; X[i]=Math.cos(a)*r; Y[i]=Math.sin(a)*r; Z[i]=.2+Math.random()*.8; PZ[i]=Z[i]; };
+    for(let i=0;i<N;i++) spawn(i);
+    return {draw(c,S,cc,G,sz,W,H){
+      const sp=(.05+S.energy*.25+S.kick*1.4)*S.dt, F=Math.max(W,H)*.32;
+      for(let i=0;i<N;i++){
+        PZ[i]=Z[i]; Z[i]-=sp; if(Z[i]<=.02){ spawn(i); Z[i]=1; PZ[i]=1; continue; }
+        const x=cc.x+X[i]/Z[i]*F, y=cc.y+Y[i]/Z[i]*F; if(x<0||y<0||x>W||y>H){ spawn(i); Z[i]=1; PZ[i]=1; continue; }
+        const px=cc.x+X[i]/PZ[i]*F, py=cc.y+Y[i]/PZ[i]*F, z=Math.max(1,Math.round(sz*(1.6-Z[i]*1.2)));
+        const steps=Math.min(6,Math.floor(Math.hypot(x-px,y-py)/(G*1.2)));
+        for(let k=0;k<=steps;k++){ const u=steps?k/steps:0; c.rect(Math.round((x+(px-x)*u)/G)*G,Math.round((y+(py-y)*u)/G)*G,k?Math.max(1,z-1):z,k?Math.max(1,z-1):z); }
+      }
+    }};
+  }},
+  // drops of dots fall through the screen and pool into the spectrum on the floor; a kick is a downpour
+  rain:{name:"rain",make(){
+    const D=[]; let cols=0, floor=null;
+    return {draw(c,S,cc,G,sz,W,H){
+      const n=Math.max(30,Math.floor(W/(G*5))); if(n!==cols){ cols=n; floor=new Float32Array(n); }
+      const spawn=(2+S.energy*10+(S.beat?S.kick*60:0))|0;
+      for(let k=0;k<spawn&&D.length<700;k++) D.push({x:Math.random()*W,y:-Math.random()*H*.2,v:H*(.55+Math.random()*.6),l:2+Math.random()*4|0});
+      const bottom=H*.97;
+      for(let i=0;i<cols;i++){ const u=i/(cols-1), v=band(S,Math.abs(u-.5)*2*.85); floor[i]+=(v-floor[i])*Math.min(1,S.dt*(v>floor[i]?14:5)); }
+      for(let i=D.length-1;i>=0;i--){ const d=D[i]; d.y+=d.v*S.dt*(1+S.kick*.6);
+        const ci=Math.min(cols-1,Math.max(0,Math.floor(d.x/W*cols))), fy=bottom-floor[ci]*H*.18;
+        if(d.y>fy){ D.splice(i,1); continue; }
+        for(let k=0;k<d.l;k++) c.rect(Math.round(d.x/G)*G,Math.round((d.y-k*G*1.4)/G)*G,sz,sz); }
+      for(let i=0;i<cols;i++){ const x=Math.round((i+.5)/cols*W/G)*G, h=floor[i]*H*.18;
+        for(let y=0;y<h;y+=G*1.5){ if(hash(i,y)>1-y/Math.max(1,h)*.6) continue; c.rect(x,Math.round((bottom-y)/G)*G,sz,sz); } }
+    }};
+  }},
+  // a living line of the waveform through the cover, like an old scope
+  scope:{name:"scope",make(){
+    return {draw(c,S,cc,G,sz,W,H){
+      const x0=W*.04, x1=W*.96, A=cc.half*(1.1+S.kick*.6), N=Math.floor((x1-x0)/G);
+      for(let i=0;i<=N;i++){ const u=i/N, w=S.w[Math.floor(u*(WN-1))], env=Math.sin(u*Math.PI), y=cc.y+w*A*(.35+.65*env);
+        if(env<.25&&hash(i,7)>env*4) continue;
+        c.rect(Math.round((x0+(x1-x0)*u)/G)*G,Math.round(y/G)*G,sz,sz);
+        if(i%2===0) c.rect(Math.round((x0+(x1-x0)*u)/G)*G,Math.round((cc.y-w*A*.25*env)/G)*G,Math.max(1,sz-1),Math.max(1,sz-1)); }
+    }};
+  }},
+  // the waveform against itself a moment later: lissajous figures around the cover
+  lissa:{name:"lissajous",make(){
+    return {draw(c,S,cc,G,sz){
+      const R=cc.half*(1.9+S.kick*.7), lag=24;
+      for(let i=0;i<WN-lag;i+=2){ const a=S.w[i], b=S.w[i+lag], x=(a-b)*.7071, y=(a+b)*.7071, r=Math.hypot(x,y);
+        // pushed out of the cover so the shape stays visible
+        const k=(cc.half*1.12+r*R)/(r||1), px=cc.x+x*k, py=cc.y+y*k;
+        c.rect(Math.round(px/G)*G,Math.round(py/G)*G,sz,sz); }
+    }};
+  }},
+  // nothing around the cover: the big letters themselves become the visualizer
+  letters:{name:"reactive letters",letters:true,make(){ return {draw(c,S){ DG.react(S); }}; }},
 };
 const VZI={};                          // live instance for the player, one per style, made when first used
 function vzInst(k){ if(!VZS[k]) k="burst"; return VZI[k]||(VZI[k]=VZS[k].make()); }
@@ -1840,6 +1924,10 @@ function vzPreviewLoop(t){
   const pic=(cur&&cur.pic)||ASSET("disc.jpg");
   document.querySelectorAll("#vzGrid .vzb").forEach(b=>{
     const k=b.dataset.v, c=b.firstElementChild.getContext("2d"), W=160, H=100, cc={x:W/2,y:H*.46,half:H*.17};
+    if(VZS[k].letters){ c.clearRect(0,0,W,H); c.fillStyle=TC.viz; const sc=1+VZP.sig.kick*.25;
+      c.save(); c.translate(W/2,H/2); c.scale(sc,sc); c.font="700 46px SFD, sans-serif"; c.textAlign="center"; c.textBaseline="middle"; try{ c.letterSpacing="-3px"; }catch(e){}
+      c.fillText("xa",0,2); c.restore(); c.globalCompositeOperation="destination-out";
+      for(let y=0;y<H;y+=2) c.fillRect(0,y,W,1); for(let x=0;x<W;x+=2) c.fillRect(x,0,1,H); c.globalCompositeOperation="source-over"; return; }
     const inst=VZP.inst[k]||(VZP.inst[k]=VZS[k].make());
     c.clearRect(0,0,W,H); c.fillStyle=TC.viz; c.beginPath(); inst.draw(c,VZP.sig,cc,2,1,W,H,{pic}); c.fill();
     if(!(VZS[k].cover&&inst.ready&&inst.ready())){ c.fillStyle=`rgba(${TC.fg},.14)`; c.fillRect(cc.x-cc.half,cc.y-cc.half,cc.half*2,cc.half*2); }
@@ -2637,7 +2725,8 @@ const DG=(function(){
       const pad=fs*.2, base=pad+asc; g.textAlign=right?"right":"left"; g.fillText(txt,right?off.width-pad:pad,base);
       const top=r.top+(lh-(asc+des))/2, ox=right?r.right-(off.width-pad):r.left-pad, oy=top-pad;
       const d=g.getImageData(0,0,off.width,off.height).data;
-      for(let y=0;y<off.height;y+=G) for(let x=0;x<off.width;x+=G) if(d[(y*off.width+x)*4+3]>130) out.push([ox+x,oy+y]);
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      for(let y=0;y<off.height;y+=G) for(let x=0;x<off.width;x+=G) if(d[(y*off.width+x)*4+3]>130) out.push([ox+x,oy+y,cx,cy]);
     }
     return out;
   }
@@ -2649,7 +2738,7 @@ const DG=(function(){
     const next=[];
     for(let i=0;i<T.length;i++){
       const p=P[i]||(P.length?Object.assign({},P[Math.random()*P.length|0],{vx:0,vy:0}):{x:T[i][0],y:T[i][1],vx:0,vy:0});
-      p.tx=T[i][0]; p.ty=T[i][1]; if(snap){ p.x=p.tx; p.y=p.ty; p.vx=p.vy=0; } next.push(p);
+      p.tx=T[i][0]; p.ty=T[i][1]; p.cx=T[i][2]; p.cy=T[i][3]; if(snap){ p.x=p.tx; p.y=p.ty; p.vx=p.vy=0; } next.push(p);
     }
     P=next;
   }
@@ -2679,15 +2768,26 @@ const DG=(function(){
     go();
   }
   function go(){ if(running||!visible()) return; running=true; last=performance.now(); requestAnimationFrame(step); }
+  // the letters style: every kick blows the dots out of their letters, the highs make them shiver
+  let lastReact=0;
+  function react(S){
+    if(!on||!visible()||!P.length) return;
+    const now=performance.now(); if(now-lastReact<20) return; lastReact=now;
+    if(S.beat){ const kk=S.kick*(260+Math.random()*80);
+      for(const p of P){ const dx=p.tx-p.cx, dy=p.ty-p.cy, d=Math.hypot(dx,dy)||1, f=.45+hash(p.tx,p.ty)*.9; p.vx+=dx/d*kk*f; p.vy+=dy/d*kk*f; } }
+    const j=Math.max(0,S.high-.2)*55;
+    if(j>0) for(const p of P){ if(Math.random()<.05){ p.vx+=(Math.random()-.5)*j; p.vy+=(Math.random()-.5)*j; } }
+    go();
+  }
   function mode(){
-    const want=FX.giant==="dots"; document.body.classList.toggle("dotg",want);
+    const want=FX.giant==="dots"||FX.vstyle==="letters"; document.body.classList.toggle("dotg",want);
     if(want&&!on){ on=true; size(); P=[]; retarget(true); if(visible()) draw(); }
     else if(!want&&on){ on=false; P=[]; c.clearRect(0,0,W,H); }
     else if(on){ col=getComputedStyle(els[0]).color||col; if(visible()) draw(); }
   }
   addEventListener("mousemove",()=>{ if(on&&!running&&curView==="player") go(); },{passive:true});
   addEventListener("resize",()=>{ if(!on) return; clearTimeout(DG._rz); DG._rz=setTimeout(()=>{ size(); retarget(true); if(visible()) draw(); },180); });
-  return {kick,mode,redraw(){ if(on){ size(); retarget(true); if(visible()) draw(); } }};
+  return {kick,mode,react,redraw(){ if(on){ size(); retarget(true); if(visible()) draw(); } }};
 })();
 
 $("#vzGrid").innerHTML=vzPreviewHtml();

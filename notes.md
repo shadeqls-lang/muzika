@@ -1,4 +1,16 @@
-## new in 0.5.0
+## new in 0.5.1
+- **six more styles**: orbit, starfield, rain, scope, lissajous and reactive letters
+- **orbit**: rings of dots circle the cover, bass swells them, highs spin them, kicks throw them out
+- **starfield**: you fly through stars coming out of the cover, every kick is a jump forward
+- **rain**: drops of dots fall through the screen and pool into the spectrum on the floor, a kick is a downpour
+- **scope**: the waveform as a living line through the cover, like an old oscilloscope
+- **lissajous**: the sound drawn against itself a moment later, shapes around the cover
+- **reactive letters**: the big letters become the visualizer, every kick blows the dots out of them
+
+## fixes
+- **kicks hit harder**: muzika now listens for real kicks instead of overall loudness. pulse, dot field and cover dots stay calm between kicks and punch on each one
+
+## 0.5.0
 - **visualizer styles**: settings → look → visualizer style. every button plays a small live preview of itself
 - **burst**: the one you know, a dithered explosion of dots around the cover
 - **ring bars**: thin spokes of dots around the cover, with peaks that slowly fall
