@@ -16,7 +16,7 @@
 :root{--bg:#0a0a0b;--s1:#111113;--s2:#18181b;--ink:#ececec;--hi:#f5f5f5;--txt:#b9b9be;--dim:#77777d;--dim2:#4a4a50;--line:rgba(255,255,255,.08);--fg:255,255,255;
   --spring:cubic-bezier(.2,1.4,.4,1);--pad:clamp(20px,4vw,56px);--max:1240px}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scrollbar-width:none}
+html{scrollbar-width:none}
 html::-webkit-scrollbar{display:none}
 body{background:var(--bg);color:var(--txt);font-family:"SF Pro Display","Inter Tight",-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
@@ -34,9 +34,76 @@ body::after{content:"";position:fixed;inset:-50%;z-index:100;pointer-events:none
 .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
 .it{font-style:italic;font-weight:200;letter-spacing:-.04em}
 
+/* ---------- background film ---------- */
+#bgv{position:fixed;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;opacity:.36;transform:scale(calc(1.05 + var(--sp,0)*.25));transform-origin:50% 30%;filter:contrast(1.15)}
+.bgfade{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 80% at 50% 35%,rgba(10,10,11,.15),rgba(10,10,11,.75) 70%,#0a0a0b),linear-gradient(180deg,transparent 0,rgba(10,10,11,calc(var(--sp,0)*.7)) 100%)}
+
+/* ---------- smooth, stretchy scroll ---------- */
+html.ss body{overscroll-behavior:none}
+html.ss #sm{position:fixed;left:0;top:0;width:100%;will-change:transform}
+
+/* ---------- iridescent everything ---------- */
+@property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes spin{to{--a:360deg}}
+@keyframes sheen{to{background-position:-250% 0}}
+.irid{background:linear-gradient(100deg,#6d6d73 18%,#f4f4f6 34%,#b8c6ff 40%,#ffd3f2 46%,#c9fff1 52%,#f4f4f6 58%,#6d6d73 74%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 7s linear infinite}
+.h2 em{background:linear-gradient(100deg,#5f5f65 18%,#d9d9dd 34%,#aab8f0 40%,#efc4e2 46%,#bdeee2 52%,#d9d9dd 58%,#5f5f65 74%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 9s linear infinite}
+.lg::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:.55;transition:opacity .4s;
+  background:conic-gradient(from var(--a),rgba(255,255,255,.05),rgba(184,198,255,.7),rgba(255,255,255,.08),rgba(255,211,242,.65),rgba(255,255,255,.05),rgba(201,255,241,.6),rgba(255,255,255,.05));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 8s linear infinite}
+.lg:hover::before{opacity:1}
+nav.lg::before{animation-duration:14s;opacity:.4}
+.dl{position:relative;overflow:hidden;background:linear-gradient(100deg,#d9d9dc,#ffffff 30%,#e4e8ff 42%,#ffe7f6 50%,#e8fff9 58%,#ffffff 70%,#d9d9dc);background-size:250% 100%;animation:sheen 5s linear infinite}
+.dl::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.9) 50%,transparent 65%);transform:translateX(-120%);transition:none}
+.dl:hover::after{transform:translateX(120%);transition:transform .8s ease}
+
+/* ---------- hud, like the film ---------- */
+.hud{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;transition:opacity .4s}
+.hud.on{opacity:1}
+.hud i{position:absolute;background:rgba(255,255,255,.1)}
+.hud .hx{left:0;right:0;height:1px}.hud .hy{top:0;bottom:0;width:1px}
+.hud span{position:absolute;font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.prog{position:fixed;right:18px;top:50%;translate:0 -50%;z-index:55;height:34vh;width:1px;background:rgba(255,255,255,.1)}
+.prog b{position:absolute;left:0;top:0;width:1px;background:#fff;height:calc(var(--sp,0)*100%)}
+.prog span{position:absolute;right:8px;top:calc(var(--sp,0)*100%);translate:0 -50%;font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums}
+@media (hover:none),(max-width:720px){ .hud,.prog{display:none} }
+.sec{display:flex;align-items:center;gap:14px;margin-bottom:28px;font-size:11px;color:var(--dim)}
+.sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.18),transparent)}
+.sec b{color:var(--ink);font-weight:500}
+
+/* ---------- marquee ---------- */
+.mq{margin-top:16vh;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;transform:rotate(-2deg) scale(1.04)}
+.mq.b{transform:rotate(2deg) scale(1.04);margin-top:0}
+.mq .t{display:flex;width:max-content;gap:0;will-change:transform}
+.mq span{font-size:clamp(28px,4.4vw,56px);font-weight:700;letter-spacing:-.05em;white-space:nowrap;padding-right:.6em;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.35)}
+.mq span:nth-child(3n+2){color:#ececec;-webkit-text-stroke:0}
+.mq span:nth-child(3n+3){font-style:italic;font-weight:200}
+
+/* ---------- memory chart ---------- */
+.mem{margin-top:56px;border-radius:30px;padding:clamp(22px,3vw,36px)}
+.mrow{display:grid;grid-template-columns:minmax(150px,240px) minmax(0,1fr) 170px;gap:22px;align-items:center;padding:20px 0;border-bottom:1px solid var(--line)}
+.mrow:last-of-type{border-bottom:0}
+.mrow .nm b{display:block;color:var(--ink);font-size:15px;font-weight:600;letter-spacing:-.02em}
+.mrow .nm span{font-size:11px;color:var(--dim)}
+.cells{display:grid;grid-template-columns:repeat(100,1fr);gap:2px}
+.cells i{aspect-ratio:1/2.4;border-radius:1px;background:rgba(255,255,255,.06);transition:background .25s}
+.cells i.f{background:rgba(255,255,255,.78)}
+.cells i.r{background:rgba(255,255,255,.3);animation:flick 1.3s steps(2) infinite}
+@keyframes flick{50%{background:rgba(255,255,255,.1)}}
+.cells.mz i.f{background:linear-gradient(180deg,#fff,#b8c6ff 40%,#ffd3f2 70%,#c9fff1);animation:none;box-shadow:0 0 10px rgba(200,210,255,.6)}
+.mrow .v{text-align:right;white-space:nowrap;font-size:clamp(26px,3vw,40px);line-height:1;color:var(--ink)}
+.mrow .v small{display:block;font-size:10px;font-style:normal;font-weight:500;color:var(--dim);margin-top:4px;letter-spacing:0}
+.memx{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-top:26px;flex-wrap:wrap}
+.memx .big{font-size:clamp(64px,10vw,150px);line-height:.85;letter-spacing:-.06em}
+.memx p{font-size:11px;color:var(--dim);max-width:380px}
+.axis{display:grid;grid-template-columns:minmax(150px,240px) minmax(0,1fr) 170px;gap:22px;font-size:10px;color:var(--dim2);margin-top:6px}
+.axis div{display:flex;justify-content:space-between}
+@media (max-width:760px){ .mrow,.axis{grid-template-columns:1fr} .mrow .v{text-align:left} .cells{grid-template-columns:repeat(50,1fr)} .axis>span,.axis>em{display:none} }
+
 /* nav */
 nav{position:fixed;top:16px;left:50%;translate:-50% 0;z-index:50;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 20px;border-radius:30px;width:min(760px,calc(100% - 24px))}
-nav .logo{font-weight:700;font-size:17px;letter-spacing:-.04em;color:var(--hi);margin-right:auto}
+nav .logo{font-weight:700;font-size:17px;letter-spacing:-.04em;color:var(--hi);margin-right:auto;display:flex;align-items:baseline;gap:8px}
+nav .ver{font-size:10px;font-weight:500;letter-spacing:0;color:var(--dim)}
 nav .lk{font-size:13px;color:var(--txt);padding:8px 12px;border-radius:18px;transition:color .2s,background .2s}
 nav .lk:hover{color:var(--ink);background:rgba(255,255,255,.06)}
 .dl{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 18px;border-radius:20px;background:#ececec;color:#0b0b0c;font-weight:600;font-size:13px;transition:transform .5s var(--spring),background .2s;white-space:nowrap}
@@ -150,20 +217,26 @@ footer .ls{display:flex;gap:18px}
 </head>
 <body>
 
+<video id="bgv" autoplay muted loop playsinline preload="auto" poster="bg.jpg"><source src="bg.mp4" type="video/mp4"></video>
+<div class="bgfade"></div>
+<div class="hud" id="hud"><i class="hx" id="hx"></i><i class="hy" id="hy"></i><span id="hc"></span></div>
+<div class="prog"><b></b><span id="pp">00</span></div>
 <nav class="lg">
-  <a class="logo" href="#top">muzika</a>
+  <a class="logo" href="#top">muzika<span class="ver" data-ver></span></a>
   <a class="lk" href="#what">what</a>
   <a class="lk" href="#features">features</a>
+  <a class="lk" href="#light">lighter</a>
   <a class="lk" href="#visualizers">visualizers</a>
   <a class="lk" href="#install">install</a>
   <a class="lk" href="#faq">faq</a>
   <a class="dl" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download</a>
 </nav>
 
+<main id="sm">
 <header class="hero" id="top">
   <canvas id="dots"></canvas>
   <span class="hint" id="hint">swipe the mouse through the letters</span>
-  <p class="tag">soundcloud on your desktop. <em>dark, quiet, and light enough to run next to a game.</em></p>
+  <p class="tag"><span class="irid">soundcloud on your desktop.</span> <em>dark, quiet, and light enough to run next to a game.</em></p>
   <div class="row">
     <a class="dl big" href="https://github.com/shadeqls-lang/muzika/releases/latest/download/muzika.exe" data-dl><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM4 19h16v2H4z"/></svg>download for windows <small data-ver></small></a>
     <a class="ghost" href="https://github.com/shadeqls-lang/muzika" target="_blank" rel="noopener">source on github</a>
@@ -181,7 +254,12 @@ footer .ls{display:flex;gap:18px}
     <div><b class="it">0</b><span>captchas. likes live in muzika, soundcloud never gets in the way</span></div>
   </div>
 
+</div>
+  <div class="mq"><div class="t" data-dir="1"><span>streams in pieces</span><span>likes without captchas</span><span>0% cpu in the tray</span><span>radio from any track</span><span>12 visualizers</span><span>wrapped every month</span><span>updates itself</span><span>one small exe</span></div></div>
+  <div class="mq b"><div class="t" data-dir="-1"><span>made for gamers</span><span>dark and quiet</span><span>soundcloud on your desktop</span><span>dots that hear the beat</span><span>free</span><span>open source</span><span>no installer</span><span>no ads</span></div></div>
+<div class="wrap">
   <section id="what">
+    <div class="sec rv"><b>01</b> what</div>
     <div class="two">
       <h2 class="h2 rv">what is<br><em>muzika.</em></h2>
       <p class="lead rv">a soundcloud player for windows, made with two rules: it has to look good, and it has to stay out of the way. it streams soundcloud in small pieces so tracks start almost instantly, keeps your likes without captchas, and goes fully quiet in the tray while you play something else.</p>
@@ -189,6 +267,7 @@ footer .ls{display:flex;gap:18px}
   </section>
 
   <section id="features">
+    <div class="sec rv"><b>02</b> features</div>
     <h2 class="h2 rv">everything<br><em>you need. nothing loud.</em></h2>
     <div class="bento">
       <div class="card lg c4 rv"><span class="lbl">streaming</span><div class="k it" style="margin-top:18px">~0.3 s</div>
@@ -206,7 +285,23 @@ footer .ls{display:flex;gap:18px}
     </div>
   </section>
 
+  <section id="light">
+    <div class="sec rv"><b>03</b> lighter</div>
+    <div class="two">
+      <h2 class="h2 rv">lighter than<br><em>a browser tab.</em></h2>
+      <p class="lead rv">soundcloud in a browser drags the whole browser along: tabs, extensions, a renderer for every site. muzika is one page with one job, so it takes a fraction of the memory and goes to sleep when you're in a game.</p>
+    </div>
+    <div class="mem lg rv" id="mem">
+      <div class="mrow"><div class="nm"><b>a browser with soundcloud</b><span>chrome, opera gx, edge. usual tabs open</span></div><div class="cells" data-from="60" data-to="100"></div><div class="v it"><span data-n="1.5">0</span>–<span data-n="2.5">0</span><small>gb of ram</small></div></div>
+      <div class="mrow"><div class="nm"><b>muzika, playing</b><span>visualizer on, window open</span></div><div class="cells mz" data-from="4" data-to="8"></div><div class="v it">~<span data-n="0.15">0</span><small>gb of ram</small></div></div>
+      <div class="mrow"><div class="nm"><b>muzika, behind a game</b><span>in the tray, only the sound runs</span></div><div class="cells mz" data-from="3" data-to="4"></div><div class="v it"><span data-n="0" data-u="%">0</span>%<small>cpu</small></div></div>
+      <div class="axis"><span></span><div><span>0</span><span>0.5 gb</span><span>1 gb</span><span>1.5 gb</span><span>2 gb</span><span>2.5 gb</span></div><em></em></div>
+      <div class="memx"><div class="big it irid">~10× less</div><p>rough numbers from windows task manager. a browser grows with every tab and extension; muzika grows a little with what's on screen. check yours, it's the best ad we have.</p></div>
+    </div>
+  </section>
+
   <section id="visualizers">
+    <div class="sec rv"><b>04</b> visualizers</div>
     <div class="two">
       <h2 class="h2 rv">dots that<br><em>hear the beat.</em></h2>
       <p class="lead rv">muzika listens to three parts of the sound on their own: kicks and 808s, claps and snares, hats. so a wall of bass still shows every new hit. try a few, this one runs on a test beat.</p>
@@ -216,6 +311,7 @@ footer .ls{display:flex;gap:18px}
   </section>
 
   <section id="install">
+    <div class="sec rv"><b>05</b> install</div>
     <h2 class="h2 rv">three steps.<br><em>that's it.</em></h2>
     <div class="steps">
       <div class="step lg rv"><span class="n it">1</span><h3>download</h3><p>one file, <code>muzika.exe</code>. put it in its own folder: muzika keeps everything in <code>muzika_data</code> right next to it, never on c:.</p></div>
@@ -226,6 +322,7 @@ footer .ls{display:flex;gap:18px}
   </section>
 
   <section id="faq">
+    <div class="sec rv"><b>06</b> faq</div>
     <h2 class="h2 rv">questions.</h2>
     <div class="faq rv">
       <details><summary>is it free?</summary><p>yes. no ads, no account of its own, no subscription. the code is on github.</p></details>
@@ -249,6 +346,7 @@ footer .ls{display:flex;gap:18px}
     <div class="ls"><a href="https://github.com/shadeqls-lang/muzika" target="_blank" rel="noopener">github</a><a href="https://t.me/emopunk" target="_blank" rel="noopener">telegram</a><a href="https://discord.gg/VzGdZZ5H8" target="_blank" rel="noopener">discord</a><a href="https://github.com/shadeqls-lang/muzika/releases" target="_blank" rel="noopener">all versions</a></div>
   </footer>
 </div>
+</main>
 
 <script>
 const REPO="shadeqls-lang/muzika";
@@ -285,12 +383,16 @@ const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.
       return {tx:t[0],ty:t[1],x:W/2+Math.cos(a)*r,y:H*.38+Math.sin(a)*r,vx:0,vy:0,de:Math.random()*.6}; });
     born=performance.now(); go();
   }
+  let lf=0;
   function step(now){
     if(!vis){ run=false; return; }
+    if(now-lf<30&&!(performance.now()-M.t<120)){ requestAnimationFrame(step); return; } lf=now;
     const dt=Math.min(.033,(now-last)/1000||.016); last=now; const T=(now-born)/1000;
     const sp=Math.hypot(M.vx,M.vy), R=90+Math.min(130,sp*.07), live=performance.now()-M.t<80&&sp>40, r=cv.getBoundingClientRect();
     M.vx*=.9; M.vy*=.9; let moving=false;
-    c.clearRect(0,0,W,H); c.fillStyle="#ececec"; c.beginPath(); const sz=Math.max(2,Math.round(G*.62));
+    const sw=((now/4200)%1)*W*2.6-W*.8, gr=c.createLinearGradient(sw,0,sw+W*.8,H*.4);
+    gr.addColorStop(0,"#d6d6da"); gr.addColorStop(.35,"#ffffff"); gr.addColorStop(.45,"#c3ceff"); gr.addColorStop(.52,"#ffd6f1"); gr.addColorStop(.6,"#cffff2"); gr.addColorStop(.72,"#ffffff"); gr.addColorStop(1,"#d6d6da");
+    c.clearRect(0,0,W,H); c.fillStyle=gr; c.beginPath(); const sz=Math.max(2,Math.round(G*.62));
     for(const p of P){
       if(T<p.de){ moving=true; continue; }
       const K=T<1.6?30:34, D=T<1.6?8:7.5;
@@ -303,7 +405,7 @@ const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.
     }
     c.fill();
     if(T>2.2) document.getElementById("hint").classList.add("on");
-    if(!moving&&!live){ run=false; return; } requestAnimationFrame(step);
+    requestAnimationFrame(step);      // keeps shimmering while the hero is on screen
   }
   function go(){ if(run) return; run=true; last=performance.now(); requestAnimationFrame(step); }
   addEventListener("pointermove",()=>{ if(vis) go(); },{passive:true});
@@ -383,6 +485,65 @@ document.querySelectorAll(".rv").forEach(el=>io.observe(el));
   document.getElementById("vzSw").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; style=b.dataset.v;
     document.querySelectorAll("#vzSw button").forEach(x=>x.classList.toggle("on",x===b)); };
 })();
+
+/* ---------- smooth scroll that stretches: what's above and below pulls apart, edges rubber-band ---------- */
+const SS={cur:0,tgt:0,v:0,over:0,on:matchMedia("(hover:hover) and (pointer:fine)").matches&&!matchMedia("(prefers-reduced-motion:reduce)").matches};
+const sm=document.getElementById("sm"), root=document.documentElement;
+function setH(){ if(SS.on) document.body.style.height=sm.scrollHeight+"px"; }
+if(SS.on){
+  root.classList.add("ss"); new ResizeObserver(setH).observe(sm); setH(); SS.cur=SS.tgt=scrollY;
+  addEventListener("wheel",e=>{ const max=document.body.scrollHeight-innerHeight;
+    if((scrollY<=0&&e.deltaY<0)||(scrollY>=max-1&&e.deltaY>0)){ SS.over=Math.max(-170,Math.min(170,SS.over-e.deltaY*.35)); kickSS(); } },{passive:true});
+}
+let ssRun=false;
+function kickSS(){ if(!ssRun){ ssRun=true; requestAnimationFrame(ssStep); } }
+function ssStep(){
+  SS.tgt=scrollY; SS.cur+=(SS.tgt-SS.cur)*.085; SS.v=SS.tgt-SS.cur; SS.over*=.86;
+  if(Math.abs(SS.v)<.1) SS.cur=SS.tgt; if(Math.abs(SS.over)<.1) SS.over=0;
+  const st=1+Math.min(.16,Math.abs(SS.v)*.00032+Math.abs(SS.over)*.0011);
+  const y=-SS.cur+SS.over, oy=SS.over>0?SS.cur:SS.over<0?SS.cur+innerHeight:SS.cur+innerHeight/2;
+  sm.style.transformOrigin=`50% ${oy}px`;
+  sm.style.transform=`translate3d(0,${y.toFixed(2)}px,0) scaleY(${st.toFixed(4)})`;
+  onScrollFx();
+  if(SS.v!==0||SS.over!==0) requestAnimationFrame(ssStep); else ssRun=false;
+}
+addEventListener("scroll",()=>{ if(SS.on) kickSS(); else onScrollFx(); },{passive:true});
+
+/* scroll-driven bits: progress, background zoom, marquee speed */
+const MQ=[...document.querySelectorAll(".mq .t")].map(t=>{ t.innerHTML+=t.innerHTML; return {t,x:0,dir:+t.dataset.dir}; });
+function onScrollFx(){
+  const max=Math.max(1,document.body.scrollHeight-innerHeight), sp=Math.min(1,Math.max(0,scrollY/max));
+  root.style.setProperty("--sp",sp.toFixed(4)); document.getElementById("pp").textContent=String(Math.round(sp*100)).padStart(2,"0");
+}
+let mqLast=0;
+(function mq(t){ requestAnimationFrame(mq); const dt=Math.min(.05,(t-mqLast)/1000||.016); mqLast=t;
+  const boost=SS.on?SS.v*.6:0;
+  for(const m of MQ){ const w=m.t.scrollWidth/2; m.x-=(60+Math.abs(boost)*6)*dt*m.dir*(boost<0?-1:1); if(m.x<-w) m.x+=w; if(m.x>0) m.x-=w; m.t.style.transform=`translate3d(${m.x.toFixed(1)}px,0,0)`; }
+})(0);
+onScrollFx();
+
+/* ---------- hud: coordinates under the cursor, like the film behind ---------- */
+(function(){ const h=document.getElementById("hud"), hx=document.getElementById("hx"), hy=document.getElementById("hy"), hc=document.getElementById("hc");
+  if(!matchMedia("(hover:hover)").matches) return;
+  addEventListener("pointermove",e=>{ h.classList.add("on"); hx.style.top=e.clientY+"px"; hy.style.left=e.clientX+"px";
+    hc.style.left=(e.clientX+12)+"px"; hc.style.top=(e.clientY+10)+"px"; hc.textContent=`(X ${Math.round(e.clientX)} Y ${Math.round(e.clientY+(SS.on?SS.cur:scrollY))})`; },{passive:true});
+  document.addEventListener("pointerleave",()=>h.classList.remove("on"));
+})();
+
+/* ---------- memory chart: cells fill, numbers count ---------- */
+(function(){ const box=document.getElementById("mem"); let done=false;
+  box.querySelectorAll(".cells").forEach(c=>{ c.innerHTML="<i></i>".repeat(100); });
+  new IntersectionObserver(es=>{ if(!es[0].isIntersecting||done) return; done=true;
+    box.querySelectorAll(".cells").forEach((c,ri)=>{ const a=+c.dataset.from, b=+c.dataset.to, cells=[...c.children];
+      cells.forEach((el,i)=>setTimeout(()=>{ if(i<a) el.classList.add("f"); else if(i<b) el.classList.add("r"); },300+ri*250+i*9)); });
+    box.querySelectorAll("[data-n]").forEach(el=>{ const to=+el.dataset.n, dec=to%1?(to<1?2:1):0, t0=performance.now();
+      (function f(t){ const k=Math.min(1,(t-t0)/1400), e=1-Math.pow(1-k,3); el.textContent=(to*e).toFixed(dec); if(k<1) requestAnimationFrame(f); })(t0); });
+  },{threshold:.35}).observe(box);
+})();
+
+/* ---------- background film: only plays when the tab is visible ---------- */
+(function(){ const v=document.getElementById("bgv"); v.playbackRate=.8;
+  document.addEventListener("visibilitychange",()=>{ document.hidden?v.pause():v.play().catch(()=>{}); }); })();
 </script>
 </body>
 </html>
