@@ -23,7 +23,7 @@ echo  [1/2] WebView2 SDK already in lib\
 echo  [2/2] compiling muzika.exe...
 if exist muzika.exe del /q muzika.exe 2>nul
 if exist muzika.exe goto running
-"%CSC%" /nologo /target:winexe /platform:x64 /optimize+ /out:muzika.exe /win32icon:assets\icon.ico /r:lib\Microsoft.Web.WebView2.Core.dll /r:lib\Microsoft.Web.WebView2.WinForms.dll /r:System.dll /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Security.dll /resource:lib\Microsoft.Web.WebView2.Core.dll,wv2core /resource:lib\Microsoft.Web.WebView2.WinForms.dll,wv2wf /resource:lib\WebView2Loader.dll,wv2loader /resource:ui\index.html,uihtml /resource:assets\intro.webm,intro.webm /resource:assets\about.webm,about.webm /resource:assets\ring.webm,ring.webm /resource:assets\disc.jpg,disc.jpg src\*.cs
+"%CSC%" /nologo /target:winexe /platform:x64 /optimize+ /out:muzika.exe /win32icon:assets\icon.ico /r:lib\Microsoft.Web.WebView2.Core.dll /r:lib\Microsoft.Web.WebView2.WinForms.dll /r:System.dll /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Security.dll /resource:lib\Microsoft.Web.WebView2.Core.dll,wv2core /resource:lib\Microsoft.Web.WebView2.WinForms.dll,wv2wf /resource:lib\WebView2Loader.dll,wv2loader /resource:ui\index.html,uihtml /resource:assets\intro.webm,intro.webm /resource:assets\about.webm,about.webm /resource:assets\ring.webm,ring.webm /resource:assets\disc.jpg,disc.jpg /resource:notes.md,notes src\*.cs
 if errorlevel 1 goto failed
 
 echo.

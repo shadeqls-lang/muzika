@@ -1,10 +1,11 @@
 ## new
-- **fullscreen**: big cover, visualizer and track name over the whole screen. F11, the button in the player or double-click the cover. esc to leave. the visualizer keeps going even when you're in a game on the other monitor
-- **when you listen**: stats now show a week map, day by hour. older plays are filled in from your history
-- **backup**: settings → backup. one .muzika file with saved tracks, playlists, stats and settings. the soundcloud login is never in it
-- **what's new**: this window. it opens once after an update, and settings → updates → what's new shows it again
+- **likes are one list**: the heart in muzika is a like. muzika keeps its own likes (soundcloud refuses likes from apps), and library → likes shows them together with your soundcloud likes, newest first
+- un-hearting a soundcloud like hides it from likes in muzika
+- **covers view**: library can show tracks as a list or as covers, like on soundcloud. the switch is next to the tabs
+- **update screen**: after an update the new version number builds itself and the notes follow, like this
 
-## updates
-- muzika checks for a new version once, when it starts. nothing runs in the background while you listen
-- a new version downloads right on the loading screen and muzika opens already updated. click the loading screen to skip it, it then installs on exit
-- the loading screen shows what's actually loading: library, soundcloud, updates
+## fixes
+- library opens with the right tab lit, and tabs switch instantly: what they loaded is kept and refreshed quietly
+- "what's new" always works, the notes ship inside the app
+- settings are grouped into look, playback and app, cards line up without gaps
+- spacing cleaned up across pages

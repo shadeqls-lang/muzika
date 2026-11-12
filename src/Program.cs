@@ -33,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
         public static Mutex Single;
         public static bool JustUpdated;
 
@@ -369,11 +369,21 @@ namespace Emopunk
             Restart("--updated");
         }
 
+        // this version's notes ship inside the exe (notes.md), other versions come from github
+        static string OwnNotes()
+        {
+            try { return Encoding.UTF8.GetString(Program.ReadRes("notes")).TrimStart('\uFEFF'); } catch { return null; }
+        }
+
         async void SendNotes(string ver)
         {
             if (string.IsNullOrEmpty(ver)) ver = Program.Version;
             string text = null, err = null;
-            try { text = await Task.Run(() => upd.FetchNotes(ver)); } catch (Exception ex) { err = ex.Message; }
+            if (!Updater.Newer(ver, Program.Version) && !Updater.Newer(Program.Version, ver)) text = OwnNotes();
+            if (text == null)
+            {
+                try { text = await Task.Run(() => upd.FetchNotes(ver)); } catch (Exception ex) { err = ex.Message; Log.Write("notes: " + ex.Message); }
+            }
             Post(new { type = "notes", ver = ver, text = text, err = err });
         }
 
@@ -857,7 +867,7 @@ namespace Emopunk
                 if (settingsScript != null) { try { web.CoreWebView2.RemoveScriptToExecuteOnDocumentCreated(settingsScript); } catch { } settingsScript = null; }
                 bool just = upd.JustVer != null && !Updater.Newer(upd.JustVer, Program.Version) && !Updater.Newer(Program.Version, upd.JustVer);
                 Post(new { type = "update", state = upd.Ready ? "ready" : (upd.Auto ? "checking" : "idle"), ver = upd.NewVersion, pct = 0, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, notes = upd.Notes,
-                    boot = true, just = just || Program.JustUpdated, justNotes = just ? upd.JustNotes : null });
+                    boot = true, just = just || Program.JustUpdated, justNotes = just || Program.JustUpdated ? (OwnNotes() ?? upd.JustNotes) : null });
                 if (!just) upd.SeenNotes();
                 upd.Start();
                 SendLibrary(); Post(new { type = "window", max = WindowState == FormWindowState.Maximized }); Post(new { type = "discord", state = rpcState }); }
