@@ -1,4 +1,14 @@
-## new in 0.4.4
+## new in 0.5.0
+- **visualizer styles**: settings → look → visualizer style. every button plays a small live preview of itself
+- **burst**: the one you know, a dithered explosion of dots around the cover
+- **ring bars**: thin spokes of dots around the cover, with peaks that slowly fall
+- **pulse**: rings of dots leave the cover on every beat and bend with the sound
+- **terrain**: lines roll toward you from under the cover, like the unknown pleasures cover
+- **dot field**: an led wall of dots around the cover, bass lights up close, highs further out, beats send a wave across
+- **cover dots**: the cover itself turns into dots that breathe with the bass and scatter on beats. in color mode the dots keep the cover's colors
+- all of them sleep in the tray and behind a game, like before
+
+## 0.4.4
 - **big letters made of dots**: settings → look → big letters → dots. the letters and the number on the player are built from dots like this screen. swipe the mouse through them, and on the next track they fly into the new letters. when nothing moves they stop drawing, so games don't feel it
 - profiles show 12 tracks at a time with "show more", covers are a bit smaller there
 

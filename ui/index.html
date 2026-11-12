@@ -41,7 +41,8 @@ body.nograin #grain{display:none}
 #marq{position:absolute;left:0;top:var(--cy);translate:0 -50%;white-space:nowrap;font-weight:700;font-size:28vh;letter-spacing:-.05em;line-height:1;
   color:transparent;-webkit-text-stroke:1px rgba(var(--fg),.055);pointer-events:none;will-change:transform;animation:marq 90s linear infinite;transition:opacity .25s ease,visibility .25s}
 @keyframes marq{to{transform:translateX(-50%)}}
-#viz{position:absolute;left:50%;top:var(--cy);width:var(--vz);height:var(--vz);transform:translate(-50%,-50%);transition:opacity .25s ease,visibility .25s}
+#viz{position:absolute;inset:0;width:100%;height:100%;transition:opacity .25s ease,visibility .25s}
+body.vzcover #cover{opacity:0!important;box-shadow:none}
 .giant{position:absolute;font-weight:700;letter-spacing:-.075em;line-height:.76;pointer-events:none;white-space:nowrap;transition:opacity .25s ease,visibility .25s}
 #initials{left:calc(var(--pad) - .02em);top:92px;font-size:clamp(100px,21vh,250px)}
 #bignum{right:calc(var(--pad) - .02em);bottom:calc(4vh + 8px);font-size:clamp(100px,21vh,250px);font-variant-numeric:tabular-nums}
@@ -395,6 +396,15 @@ body:not(.color) .tirel .rr i{filter:grayscale(1)}
 #cw{cursor:pointer}
 .now .thumb{cursor:pointer}
 @media (max-width:900px){ .tip{grid-template-columns:1fr;height:86vh} .tileft{flex-direction:row;align-items:end} .tic{width:38%} .tiyou{flex:1} }
+
+/* ================= visualizer picker ================= */
+.vzgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vzb{display:flex;flex-direction:column;gap:6px;padding:6px 6px 8px;border-radius:12px;background:rgba(var(--fg),.035);box-shadow:inset 0 0 0 1px rgba(var(--fg),.08);transition:background .2s,box-shadow .2s}
+.vzb:hover{background:rgba(var(--fg),.07)}
+.vzb.act{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.vzb canvas{width:100%;aspect-ratio:16/10;border-radius:7px;background:rgba(var(--bgc),.6);display:block}
+.vzb span{font-size:10px;font-weight:500;color:var(--dim)}
+.vzb.act span{color:var(--ink)}
 
 /* ================= big letters made of dots ================= */
 #dotg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .3s}
@@ -958,6 +968,9 @@ body[data-theme=paper] .giant{color:var(--ink)}
       <div class="row2"><span class="lbl">color</span>
           <div class="seg" data-k="color" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="bw">b / w</button><button data-v="color">color</button></div>
           <p>covers in color, and muzika takes on the color of the cover that is playing. the switch in the player does the same.</p></div>
+      <div class="row2"><span class="lbl">visualizer style</span>
+          <div class="vzgrid" id="vzGrid"></div>
+          <p>everything sleeps in the tray and behind a game, whichever style you pick.</p></div>
       <div class="row2"><span class="lbl">big letters</span>
           <div class="seg" data-k="giant" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="solid">solid</button><button data-v="dots">dots</button></div>
           <p>dots builds the big letters on the player out of dots, like the update screen. swipe the mouse through them. they rebuild when the track changes.</p></div>
@@ -1095,11 +1108,11 @@ let actx, analyser, freq, counted=false, listenedSec=0, lastT=0;
 const store={get(k,d){try{const v=localStorage.getItem("ep_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("ep_"+k,JSON.stringify(v))}catch(e){}}};
 let booting=true, FS=false, fsTm=0, NOTESFX=false;
 const TC={acc:"#ececec",fg:"255,255,255",viz:"#f2f2f2"};
-function readTheme(){ const cs=getComputedStyle(document.body); TC.acc=cs.getPropertyValue("--acc").trim()||TC.acc; TC.fg=cs.getPropertyValue("--fg").trim()||TC.fg; TC.viz=cs.getPropertyValue("--viz").trim()||TC.viz; }
+function readTheme(){ const cs=getComputedStyle(document.body); TC.bg=cs.getPropertyValue("--bg").trim()||"#0a0a0b"; TC.acc=cs.getPropertyValue("--acc").trim()||TC.acc; TC.fg=cs.getPropertyValue("--fg").trim()||TC.fg; TC.viz=cs.getPropertyValue("--viz").trim()||TC.viz; }
 let queueSrc=null;
 const ASSET=n=>HOST?"/asset/"+n:"assets/"+n;
 let stats={days:{},hours:new Array(24).fill(0),week:new Array(168).fill(0),total:0}, pendSec=0;
-const FX=Object.assign({theme:"noir",cache:"500",xfade:"5",viz:"focus",glass:"liquid",grain:"on",color:"bw",rpc:"off",rpcId:"",rpcGif:"",scLike:"off",giant:"solid"},store.get("fx",{}));
+const FX=Object.assign({theme:"noir",cache:"500",xfade:"5",viz:"focus",glass:"liquid",grain:"on",color:"bw",rpc:"off",rpcId:"",rpcGif:"",scLike:"off",giant:"solid",vstyle:"burst"},store.get("fx",{}));
 
 /* ================= host bridge ================= */
 function send(o){ if(HOST) HOST.postMessage(o); }
@@ -1478,7 +1491,7 @@ function view(v){
   curView=v; const b=document.body;
   ["lib","stats","about","find","scu","scpl","settings"].forEach(x=>b.classList.toggle("v-"+x,v===x));
   $("#navG").classList.toggle("act",v==="settings");
-  if(v==="settings"){ send({cmd:"cacheInfo"}); requestAnimationFrame(syncSegs); } b.classList.toggle("away",v!=="player");
+  if(v==="settings"){ send({cmd:"cacheInfo"}); requestAnimationFrame(syncSegs); setTimeout(vzPreviewStart,60); } b.classList.toggle("away",v!=="player");
   [["navP","player"],["navL","lib"],["navFind","find"],["navS","stats"],["navA","about"]].forEach(([id,x])=>$("#"+id).classList.toggle("act",v===x));
   $("#navR").classList.toggle("act",v==="scu"&&SU.id==="me");
   if(v==="stats") renderStats();
@@ -1558,6 +1571,7 @@ function applyFX(){
   if(document.body.dataset.theme!==FX.theme){ document.body.dataset.theme=FX.theme; TINT.src=null; readTheme(); drawWave(); }
   coverTint(); sendBg(); DG.mode();
   if(FX.viz==="off") vctx.clearRect(0,0,cv.width,cv.height);
+  document.querySelectorAll("#vzGrid .vzb").forEach(b=>b.classList.toggle("act",b.dataset.v===(VZS[FX.vstyle]?FX.vstyle:"burst")));
   kick(); sendRpcCfg(); send({cmd:"cacheSet",mb:+FX.cache});
 }
 $("#cacheClr").onclick=()=>send({cmd:"cacheClear"});
@@ -1621,16 +1635,172 @@ let rz; addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{build
   for(let i=0;i<s*s;i++){const v=Math.random()*255|0;im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255}
   x.putImageData(im,0,0); $("#grain").style.backgroundImage=`url(${c.toDataURL()})`; })();
 
-/* ================= dithered burst visualizer (dots, 30 fps, sleeps when not needed) ================= */
+/* ================= visualizers: one canvas over the stage, one analysis, many styles (30 fps, sleeps when not needed) ================= */
 const cv=$("#viz"), vctx=cv.getContext("2d");
-const SEG=160, SUB=3, STEP=.0085, NR=Math.floor(.6/STEP), ND=SEG*SUB*NR;
-const DS=new Uint16Array(ND), DR=new Float32Array(ND), DC=new Float32Array(ND), DN=new Float32Array(ND), DT=new Float32Array(ND), DL=new Float32Array(ND);
-for(let s=0,i=0;s<SEG;s++)for(let j=0;j<SUB;j++){ const a=(s+(j+.5)/SUB+(Math.random()-.5)*.25)/SEG*Math.PI*2, len=.75+Math.random()*.4, ca=Math.cos(a), sa=Math.sin(a);
-  for(let k=0;k<NR;k++,i++){ DS[i]=s; DR[i]=.16+k*STEP; DC[i]=ca; DN[i]=sa; DT[i]=Math.random(); DL[i]=len; } }
-const spike=new Float32Array(SEG).fill(.4), jit=new Float32Array(SEG).map(()=>Math.random()), coreJ=new Float32Array(SEG).map(()=>.85+Math.random()*.3);
-let VS=0, VD=1; const c0=sg=>.19*coreJ[sg];
-function sizeViz(){ const r=cv.getBoundingClientRect(); VD=Math.min(devicePixelRatio||1,1.5); const w=Math.round(r.width*VD); if(w&&cv.width!==w){cv.width=cv.height=w} VS=w; }
-let running=false, lastF=0, t0=0, energy=0;
+let VW=0, VH=0, VD=1, CC={x:0,y:0,half:100};
+// where the cover sits on the canvas: every style is built around it
+function sizeViz(){
+  const r=cv.getBoundingClientRect(); VD=Math.min(devicePixelRatio||1,1.5);
+  const w=Math.round(r.width*VD), h=Math.round(r.height*VD); if(!w||!h) return;
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
+  VW=w; VH=h;
+  const c=$("#cw").getBoundingClientRect();
+  CC={x:(c.left+c.width/2-r.left)*VD, y:(c.top+c.height/2-r.top)*VD, half:c.width/2*VD};
+  for(const k in VZI) if(VZI[k].resize) VZI[k].resize();
+}
+// ---- the signal every style reads ----
+const NB=64;
+function mkSig(){ return {b:new Float32Array(NB),bass:0,mid:0,high:0,energy:0,avg:.2,beat:false,lastBeat:0,t:0,dt:0,live:false}; }
+const SIG=mkSig();
+function readSig(S,t,dt,live,fake){
+  const B=S.b;
+  for(let i=0;i<NB;i++){
+    let v;
+    if(live){ const lo=1+Math.floor(Math.pow(i/NB,1.6)*150), hi=Math.max(lo+1,1+Math.floor(Math.pow((i+1)/NB,1.6)*150)); let s=0; for(let k=lo;k<hi;k++) s+=freq[k]; v=s/(hi-lo)/255; }
+    else if(fake){ const ph=(t/600)%1; v=Math.max(0,.55-i/NB*.45+.18*Math.sin(t/300+i*.45)+.12*Math.sin(t/170+i*1.3))*(i<10?.6+.5*Math.exp(-ph*6):1); }
+    else v=.2+.1*Math.sin(t/900+i*.3)+.06*Math.sin(t/430+i*.7);
+    B[i]+=(v-B[i])*Math.min(1,dt*(v>B[i]?18:6));
+  }
+  let a=0; for(let i=0;i<4;i++) a+=B[i]; S.bass=a/4;
+  a=0; for(let i=8;i<24;i++) a+=B[i]; S.mid=a/16;
+  a=0; for(let i=30;i<60;i++) a+=B[i]; S.high=a/30;
+  S.energy+=(S.bass-S.energy)*Math.min(1,dt*10);
+  S.avg+=(S.bass-S.avg)*Math.min(1,dt*1.6);
+  S.beat=false;
+  if((live||fake)&&S.bass>S.avg*1.22&&S.bass>.28&&t-S.lastBeat>240){ S.beat=true; S.lastBeat=t; }
+  if(!live&&!fake&&t-S.lastBeat>1400){ S.beat=true; S.lastBeat=t; }     // a slow breath when nothing plays
+  S.t=t; S.dt=dt; S.live=live;
+}
+const band=(S,x)=>S.b[Math.max(0,Math.min(NB-1,Math.floor(x*(NB-1))))];
+const hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.floor(h); };
+
+// ---- styles. each make() returns its own state, so the settings previews don't disturb the player ----
+const VZS={
+  // the original: a dithered burst of dots around the cover
+  burst:{name:"burst",make(){
+    const SEG=160, SUB=3, STEP=.0085, NR=Math.floor(.6/STEP), ND=SEG*SUB*NR;
+    const DS=new Uint16Array(ND), DR=new Float32Array(ND), DC=new Float32Array(ND), DN=new Float32Array(ND), DT=new Float32Array(ND), DL=new Float32Array(ND);
+    for(let s=0,i=0;s<SEG;s++)for(let j=0;j<SUB;j++){ const a=(s+(j+.5)/SUB+(Math.random()-.5)*.25)/SEG*Math.PI*2, len=.75+Math.random()*.4, ca=Math.cos(a), sa=Math.sin(a);
+      for(let k=0;k<NR;k++,i++){ DS[i]=s; DR[i]=.16+k*STEP; DC[i]=ca; DN[i]=sa; DT[i]=Math.random(); DL[i]=len; } }
+    const spike=new Float32Array(SEG).fill(.4), jit=new Float32Array(SEG).map(()=>Math.random()), coreJ=new Float32Array(SEG).map(()=>.85+Math.random()*.3);
+    return {draw(c,S,cc,G,sz){
+      const t=S.t, dt=S.dt;
+      for(let s=0;s<SEG;s++){ const m=s<SEG/2?s:SEG-1-s, v=band(S,Math.pow(m/(SEG/2),1.7)*.95);
+        if(Math.random()<dt*4) jit[s]=Math.random();
+        const target=Math.min(.74,.3+v*.44*(.4+jit[s]*1.1)); spike[s]+=(target-spike[s])*Math.min(1,dt*(target>spike[s]?20:5)); }
+      const R=cc.half*3, core=.19+S.energy*.05, off=Math.floor((((t/14000)%1)+1)%1*SEG);
+      for(let i=0;i<ND;i++){
+        const sg=(DS[i]+off)%SEG, c0=.19*coreJ[sg], s=c0+(spike[sg]-c0)*DL[i], cr=core*coreJ[sg], r=DR[i];
+        if(r<cr) continue;
+        let I; if(r<s){ const e=(r-cr)/(s-cr); I=(.18+.82*Math.pow(1-e,1.4))*(.85+S.energy*.4); } else I=Math.max(0,1-(r-s)*10)*.22;
+        if(I>DT[i]) c.rect(Math.round((cc.x+DC[i]*r*R)/G)*G,Math.round((cc.y+DN[i]*r*R)/G)*G,sz,sz);
+      }
+    }};
+  }},
+  // thin spokes of dots around the cover, with falling peaks
+  bars:{name:"ring bars",make(){
+    const N=120, len=new Float32Array(N), pk=new Float32Array(N);
+    return {draw(c,S,cc,G,sz){
+      const R=cc.half*3, r0=cc.half*1.12, maxL=R*.62, rot=S.t/40000*Math.PI*2, step=G*1.5;
+      for(let i=0;i<N;i++){
+        const m=i<N/2?i:N-1-i, v=band(S,Math.pow(m/(N/2),1.5)*.92), want=Math.pow(v,1.35)*maxL*(.55+S.energy*.6);
+        len[i]+=(want-len[i])*Math.min(1,S.dt*(want>len[i]?22:7)); pk[i]=Math.max(len[i],pk[i]-S.dt*R*.18);
+        const a=i/N*Math.PI*2+rot, ca=Math.cos(a), sa=Math.sin(a);
+        for(let r=0;r<len[i];r+=step){ if(hash(i,r)>1-r/maxL*.55) continue;
+          c.rect(Math.round((cc.x+ca*(r0+r))/G)*G,Math.round((cc.y+sa*(r0+r))/G)*G,sz,sz); }
+        if(pk[i]>step) c.rect(Math.round((cc.x+ca*(r0+pk[i]+step*1.6))/G)*G,Math.round((cc.y+sa*(r0+pk[i]+step*1.6))/G)*G,sz,sz);
+      }
+    }};
+  }},
+  // rings of dots leave the cover on every beat, bent by the spectrum
+  pulse:{name:"pulse",make(){
+    const rings=[]; let seed=1;
+    return {draw(c,S,cc,G,sz,W,H){
+      if(S.beat) rings.push({r:cc.half*1.1,life:1,seed:seed++,k:.6+S.bass*.9});
+      if(rings.length>9) rings.shift();
+      const far=Math.hypot(W,H)*.6;
+      const ring=(rad,life,sd,amp)=>{ const n=Math.max(24,Math.floor(rad*2*Math.PI/(G*2.2)));
+        for(let k=0;k<n;k++){ if(hash(sd,k)>life) continue; const a=k/n*Math.PI*2, m=Math.abs(((a/(Math.PI*2))+.25)%1-.5)*2;
+          const rr=rad*(1+band(S,m*.9)*amp); c.rect(Math.round((cc.x+Math.cos(a)*rr)/G)*G,Math.round((cc.y+Math.sin(a)*rr)/G)*G,sz,sz); } };
+      for(let i=rings.length-1;i>=0;i--){ const g=rings[i]; g.r+=(cc.half*1.5+S.energy*cc.half*2.2)*S.dt*g.k; g.life-=S.dt*.42;
+        if(g.life<=0||g.r>far){ rings.splice(i,1); continue; } ring(g.r,g.life*.95,g.seed,.14*g.life); }
+      ring(cc.half*(1.14+S.energy*.08),.75,0,.06);
+    }};
+  }},
+  // unknown-pleasures lines rolling toward you from under the cover
+  terrain:{name:"terrain",make(){
+    const ROWS=20, hist=[]; let acc=0;
+    for(let i=0;i<ROWS;i++) hist.push(new Float32Array(NB));
+    return {draw(c,S,cc,G,sz,W,H){
+      acc+=S.dt; if(acc>.07){ acc=0; const row=hist.shift(); row.set(S.b); hist.push(row); }
+      const span=Math.min(W*.46,cc.half*3.4), x0=cc.x-span, x1=cc.x+span, yB=cc.y+cc.half*.45, yF=Math.min(H*.97,cc.y+cc.half*3.6);
+      const pts=Math.max(40,Math.floor((x1-x0)/(G*1.6))), ys=new Float32Array(pts+1), A=cc.half*1.15;
+      c.fill(); c.beginPath();
+      for(let i=0;i<ROWS;i++){
+        const f=i/(ROWS-1), y=yB+(yF-yB)*Math.pow(f,1.2), a=A*(.5+.5*f), d=hist[i], fade=.35+.65*f;
+        for(let p=0;p<=pts;p++){ const u=p/pts, e=Math.exp(-Math.pow((u-.5)/.19,2)), dd=Math.abs(u-.5)*2, edge=Math.min(1,(1-dd)*6);
+          ys[p]=y-(d[Math.min(NB-1,Math.floor(dd*44))]*a*(e*.92+.08)+hash(i,p)*G*.5*e)*edge; }
+        // this line hides the lines behind it: erase, then draw its dots
+        c.globalCompositeOperation="destination-out"; c.beginPath(); c.moveTo(x0,y+G*2);
+        for(let p=0;p<=pts;p++) c.lineTo(x0+(x1-x0)*p/pts,ys[p]-G*.5); c.lineTo(x1,y+G*2); c.closePath(); c.fill();
+        c.globalCompositeOperation="source-over"; c.globalAlpha=fade; c.beginPath();
+        for(let p=0;p<=pts;p++){ const dd=Math.abs(p/pts-.5)*2; if(dd>.62&&hash(i*7+3,p)<(dd-.62)/.38) continue;   // edges dissolve
+          c.rect(Math.round((x0+(x1-x0)*p/pts)/G)*G,Math.round(ys[p]/G)*G,sz,sz); }
+        c.fill();
+      }
+      c.globalAlpha=1; c.beginPath();
+    }};
+  }},
+  // an led wall: bass lights up near the cover, highs further out, beats send a wave across
+  field:{name:"dot field",make(){
+    let P=null, key="", waves=[];
+    return {draw(c,S,cc,G,sz,W,H){
+      const sp=Math.max(G*3,Math.round(Math.min(W,H)/56/G)*G), k=W+"x"+H+"x"+sp+"x"+Math.round(cc.x)+"x"+Math.round(cc.y);
+      if(k!==key){ key=k; P=[]; const maxD=Math.hypot(Math.max(cc.x,W-cc.x),Math.max(cc.y,H-cc.y));
+        for(let y=sp/2;y<H;y+=sp) for(let x=sp/2;x<W;x+=sp){ if(Math.abs(x-cc.x)<cc.half*1.08&&Math.abs(y-cc.y)<cc.half*1.08) continue;
+          const d=Math.hypot(x-cc.x,y-cc.y)/maxD; P.push(x,y,d,Math.random()); } P.maxD=maxD; }
+      if(S.beat) waves.push({r:0,life:1}); if(waves.length>4) waves.shift();
+      for(let i=waves.length-1;i>=0;i--){ const w=waves[i]; w.r+=S.dt*.55; w.life-=S.dt*.6; if(w.life<=0) waves.splice(i,1); }
+      // faint grid first, then the lit dots on top
+      c.fill(); c.globalAlpha=.06; c.beginPath(); const s1=Math.max(1,Math.round(sz*.75));
+      for(let i=0;i<P.length;i+=4) c.rect(Math.round(P[i]),Math.round(P[i+1]),s1,s1);
+      c.fill(); c.globalAlpha=1; c.beginPath();
+      for(let i=0;i<P.length;i+=4){ const d=P[i+2]; if(d>.78) continue; let I=band(S,Math.min(1,d*1.4))*(1.15-d*1.2);
+        for(const w of waves){ const q=(d-w.r)/.045; I+=Math.exp(-q*q)*w.life*.75; }
+        if(I<=P[i+3]*.85+.14) continue;
+        const z=I>.8?sz*2.2:I>.5?sz*1.6:sz; const zz=Math.max(1,Math.round(z)); c.rect(Math.round(P[i]-zz/2),Math.round(P[i+1]-zz/2),zz,zz); }
+    }};
+  }},
+  // the cover itself turns into dots that breathe with the bass and scatter on beats
+  cover:{name:"cover dots",cover:true,make(){
+    const N=46; let src=null, img=null, L=null, RGB=null, off=null, vel=null, loading=false;
+    function load(s){ src=s; img=null; if(!s) return; loading=true; const im=new Image(); im.decoding="async";
+      im.onload=()=>{ if(src!==s) return; loading=false; try{ const k=document.createElement("canvas"); k.width=k.height=N; const g=k.getContext("2d",{willReadFrequently:true}); g.drawImage(im,0,0,N,N);
+        const d=g.getImageData(0,0,N,N).data; L=new Float32Array(N*N); RGB=new Array(N*N);
+        for(let i=0;i<N*N;i++){ const r=d[i*4],gg=d[i*4+1],b=d[i*4+2]; L[i]=(r*.299+gg*.587+b*.114)/255; RGB[i]=`rgb(${r&0xf0},${gg&0xf0},${b&0xf0})`; }
+        off=new Float32Array(N*N*2); vel=new Float32Array(N*N*2); img=im; }catch(e){ img=null; } };
+      im.onerror=()=>{ loading=false; }; im.src=s; }
+    return {ready:()=>!!img,draw(c,S,cc,G,sz,W,H,pv){
+      const want=pv?pv.pic:(cur&&cur.pic)||null; if(want!==src) load(want);
+      if(!img||!L) return;
+      const side=cc.half*2, cell=side/N, x0=cc.x-cc.half, y0=cc.y-cc.half, light=FX.theme==="paper", colr=FX.color==="color";
+      const kick=S.beat?cc.half*(1.2+S.bass*3.2):0, dt=S.dt;
+      const buckets=colr?new Map():null; if(!colr) c.fillStyle=TC.viz;
+      for(let y=0;y<N;y++){ const sh=(band(S,y/N*.7)-.15)*cell*1.6*Math.sin(S.t/700+y*.45);
+        for(let x=0;x<N;x++){ const i=y*N+x, j=i*2, hx=x0+(x+.5)*cell, hy=y0+(y+.5)*cell;
+          if(kick){ const dx=hx-cc.x, dy=hy-cc.y, d=Math.hypot(dx,dy)||1, f=hash(x,y)*.6+.4; vel[j]+=dx/d*kick*f; vel[j+1]+=dy/d*kick*f; }
+          vel[j]+=(-off[j]*48-vel[j]*8.5)*dt; vel[j+1]+=(-off[j+1]*48-vel[j+1]*8.5)*dt; off[j]+=vel[j]*dt; off[j+1]+=vel[j+1]*dt;
+          const lum=light?1-L[i]:L[i], z=cell*(colr?.5+.42*lum:.22+.74*lum)*(.82+S.energy*.45); if(z<.6) continue;
+          const zz=Math.max(1,Math.round(z)), px=Math.round(hx+off[j]+sh-zz/2), py=Math.round(hy+off[j+1]-zz/2);
+          if(colr){ let b=buckets.get(RGB[i]); if(!b) buckets.set(RGB[i],b=[]); b.push(px,py,zz); } else c.rect(px,py,zz,zz); } }
+      if(colr){ c.fill(); for(const [col,a] of buckets){ c.fillStyle=col; c.beginPath(); for(let k=0;k<a.length;k+=3) c.rect(a[k],a[k+1],a[k+2],a[k+2]); c.fill(); } c.fillStyle=TC.viz; c.beginPath(); }
+    }};
+  }},
+};
+const VZI={};                          // live instance for the player, one per style, made when first used
+function vzInst(k){ if(!VZS[k]) k="burst"; return VZI[k]||(VZI[k]=VZS[k].make()); }
+
+let running=false, lastF=0, t0=0;
 function wantViz(){
   if(booting||document.hidden||FX.viz==="off"||curView!=="player") return false;
   if(FX.viz==="focus"&&!document.hasFocus()&&!FS) return false;
@@ -1645,33 +1815,37 @@ function kick(){
 function frame(t){
   if(!wantViz()){ running=false; return; }
   requestAnimationFrame(frame);
-  const live=analyser&&!audio.paused;
+  const live=!!(analyser&&!audio.paused);
   if(t-lastF<(live?33:66)) return;                 // 30 fps playing, 15 fps idle
-  const dt=Math.min(.1,(t-t0)/1000); t0=t; lastF=t;
-  if(!VS) sizeViz();
-  let bass=0;
-  if(live){analyser.getByteFrequencyData(freq);for(let k=1;k<6;k++)bass+=freq[k];bass/=5*255}
-  energy+=(bass-energy)*Math.min(1,dt*10);
-  for(let s=0;s<SEG;s++){
-    const m=s<SEG/2?s:SEG-1-s; let v;
-    if(live){const k=1+Math.floor(Math.pow(m/(SEG/2),1.7)*150);v=freq[k]/255}
-    else v=.22+.12*Math.sin(t/900+s*.21)+.08*Math.sin(t/430+s*.53);
-    if(Math.random()<dt*4) jit[s]=Math.random();
-    const target=Math.min(.74,.3+v*.44*(.4+jit[s]*1.1));
-    spike[s]+=(target-spike[s])*Math.min(1,dt*(target>spike[s]?20:5));
-  }
-  const R=VS/2, G=Math.max(2,Math.round(3*VD)), sz=Math.max(1,Math.round(1.5*VD)), core=.19+energy*.05, off=Math.floor((((t/14000)%1)+1)%1*SEG);
-  vctx.clearRect(0,0,VS,VS); vctx.fillStyle=TC.viz; vctx.beginPath();
-  for(let i=0;i<ND;i++){
-    const sg=(DS[i]+off)%SEG, s=c0(sg)+(spike[sg]-c0(sg))*DL[i], c=core*coreJ[sg], r=DR[i];
-    if(r<c) continue;
-    let I;
-    if(r<s){ const e=(r-c)/(s-c); I=(.18+.82*Math.pow(1-e,1.4))*(.85+energy*.4); }
-    else I=Math.max(0,1-(r-s)*10)*.22;
-    if(I>DT[i]){ const x=Math.round((R+DC[i]*r*R)/G)*G, y=Math.round((R+DN[i]*r*R)/G)*G; vctx.rect(x,y,sz,sz); }
-  }
+  const dt=Math.min(.1,(t-t0)/1000||.033); t0=t; lastF=t;
+  if(!VW) sizeViz();
+  if(live) analyser.getByteFrequencyData(freq);
+  readSig(SIG,t,dt,live,!live&&!!window.__vzFake);
+  const st=VZS[FX.vstyle]?FX.vstyle:"burst", inst=vzInst(st);
+  document.body.classList.toggle("vzcover",st==="cover"&&!!(inst.ready&&inst.ready()));
+  const G=Math.max(2,Math.round(3*VD)), sz=Math.max(1,Math.round(1.5*VD));
+  vctx.clearRect(0,0,VW,VH); vctx.fillStyle=TC.viz; vctx.beginPath();
+  inst.draw(vctx,SIG,CC,G,sz,VW,VH);
   vctx.fill();
 }
+
+/* ---- settings: every style plays a small live preview of itself, only while settings are open ---- */
+const VZP={inst:{},sig:mkSig(),run:false,last:0};
+function vzPreviewHtml(){ return Object.keys(VZS).map(k=>`<button class="vzb" data-v="${k}"><canvas width="160" height="100"></canvas><span>${VZS[k].name}</span></button>`).join(""); }
+function vzPreviewLoop(t){
+  if(curView!=="settings"||document.hidden){ VZP.run=false; return; }
+  requestAnimationFrame(vzPreviewLoop);
+  if(t-VZP.last<66) return; const dt=Math.min(.1,(t-VZP.last)/1000||.066); VZP.last=t;
+  readSig(VZP.sig,t,dt,false,true);
+  const pic=(cur&&cur.pic)||ASSET("disc.jpg");
+  document.querySelectorAll("#vzGrid .vzb").forEach(b=>{
+    const k=b.dataset.v, c=b.firstElementChild.getContext("2d"), W=160, H=100, cc={x:W/2,y:H*.46,half:H*.17};
+    const inst=VZP.inst[k]||(VZP.inst[k]=VZS[k].make());
+    c.clearRect(0,0,W,H); c.fillStyle=TC.viz; c.beginPath(); inst.draw(c,VZP.sig,cc,2,1,W,H,{pic}); c.fill();
+    if(!(VZS[k].cover&&inst.ready&&inst.ready())){ c.fillStyle=`rgba(${TC.fg},.14)`; c.fillRect(cc.x-cc.half,cc.y-cc.half,cc.half*2,cc.half*2); }
+  });
+}
+function vzPreviewStart(){ if(!VZP.run){ VZP.run=true; requestAnimationFrame(vzPreviewLoop); } }
 
 /* ================= muzika collection: hearts + playlists, kept by the app (no soundcloud captcha) ================= */
 let MZ={saved:[],lists:[],unliked:[]};
@@ -2515,6 +2689,9 @@ const DG=(function(){
   addEventListener("resize",()=>{ if(!on) return; clearTimeout(DG._rz); DG._rz=setTimeout(()=>{ size(); retarget(true); if(visible()) draw(); },180); });
   return {kick,mode,redraw(){ if(on){ size(); retarget(true); if(visible()) draw(); } }};
 })();
+
+$("#vzGrid").innerHTML=vzPreviewHtml();
+$("#vzGrid").onclick=e=>{ const b=e.target.closest(".vzb"); if(!b) return; FX.vstyle=b.dataset.v; if(FX.viz==="off"){ FX.viz="focus"; syncSegs(); } applyFX(); };
 
 /* ================= backup ================= */
 $("#bkExp").onclick=()=>{
