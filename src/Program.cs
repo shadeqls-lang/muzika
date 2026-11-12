@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -32,7 +33,7 @@ namespace Emopunk
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr LoadLibrary(string path);
 
-        public const string Version = "0.2.0";
+        public const string Version = "0.3.0";
         public static Mutex Single;
         public static bool JustUpdated;
 
@@ -145,6 +146,8 @@ namespace Emopunk
         bool ready, exiting;
         NotifyIcon tray;
         Updater upd;
+        string settingsScript;
+        bool fsOn; Rectangle fsBounds; FormWindowState fsState;
         bool restarting, noFlush;
         DiscordRpc rpc;
         SoundCloud sc;
@@ -195,7 +198,7 @@ namespace Emopunk
             sc.OnLoggedOut = delegate { UI(delegate { PostRaw("{\"type\":\"scMe\",\"me\":null}"); Post(new { type = "toast", text = "soundcloud login expired" }); }); };
             rpc = new DiscordRpc();
             upd = new Updater(Program.Data);
-            upd.OnState = delegate(string st, string ver, double pct) { UI(delegate { Post(new { type = "update", state = st, ver = ver, pct = pct, cur = Program.Version, repo = upd.Repo, auto = upd.Auto }); }); };
+            upd.OnState = delegate(string st, string ver, double pct) { UI(delegate { Post(new { type = "update", state = st, ver = ver, pct = pct, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, notes = upd.Notes }); }); };
             rpc.OnState = delegate(string st)
             {
                 rpcState = st;
@@ -245,7 +248,7 @@ namespace Emopunk
                 if (k != null && ready) Post(new { type = "key", k = k });
                 return;
             }
-            if (m.Msg == 0x0084 && WindowState == FormWindowState.Normal)   // resize from the thin border
+            if (m.Msg == 0x0084 && WindowState == FormWindowState.Normal && !fsOn)   // resize from the thin border
             {
                 base.WndProc(ref m);
                 long lp = m.LParam.ToInt64();
@@ -286,7 +289,7 @@ namespace Emopunk
         void OnResized()
         {
             bool max = WindowState == FormWindowState.Maximized;
-            Padding = new Padding(max ? 0 : Edge);
+            Padding = new Padding(max || fsOn ? 0 : Edge);
             SetLowMemory(WindowState == FormWindowState.Minimized);
             if (ready) Post(new { type = "window", max = max });
         }
@@ -357,8 +360,114 @@ namespace Emopunk
         {
             if (!upd.Ready) return;
             try { upd.Swap(); }
-            catch (Exception ex) { Post(new { type = "toast", text = "update failed: " + ex.Message }); return; }
+            catch (Exception ex)
+            {
+                Post(new { type = "toast", text = "update failed: " + ex.Message });
+                Post(new { type = "update", state = "error", ver = ex.Message, pct = 0, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, notes = upd.Notes });
+                return;
+            }
             Restart("--updated");
+        }
+
+        async void SendNotes(string ver)
+        {
+            if (string.IsNullOrEmpty(ver)) ver = Program.Version;
+            string text = null, err = null;
+            try { text = await Task.Run(() => upd.FetchNotes(ver)); } catch (Exception ex) { err = ex.Message; }
+            Post(new { type = "notes", ver = ver, text = text, err = err });
+        }
+
+        // ---------- backup: one .muzika file (a zip), never the soundcloud login ----------
+        static readonly string[] BackupFiles = { "library.json", "history.json", "stats.json", "playlists.json" };
+
+        void BackupExport(string ls)
+        {
+            using (SaveFileDialog d = new SaveFileDialog())
+            {
+                d.Title = "save muzika backup";
+                d.Filter = "muzika backup (*.muzika)|*.muzika";
+                d.FileName = "muzika-backup-" + DateTime.Now.ToString("yyyy-MM-dd") + ".muzika";
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    lib.Flush();
+                    string tmp = d.FileName + ".tmp";
+                    if (File.Exists(tmp)) File.Delete(tmp);
+                    int n = 0;
+                    using (ZipArchive z = ZipFile.Open(tmp, ZipArchiveMode.Create))
+                    {
+                        foreach (string f in BackupFiles)
+                        {
+                            string a = Path.Combine(Program.Data, f);
+                            if (File.Exists(a)) { z.CreateEntryFromFile(a, f); n++; }
+                        }
+                        WriteEntry(z, "settings.json", string.IsNullOrEmpty(ls) ? "{}" : ls);
+                        WriteEntry(z, "muzika.json", new JavaScriptSerializer().Serialize(new { app = "muzika", version = Program.Version, made = DateTime.Now.ToString("s") }));
+                    }
+                    if (File.Exists(d.FileName)) File.Delete(d.FileName);
+                    File.Move(tmp, d.FileName);
+                    Post(new { type = "toast", text = "backup saved" });
+                }
+                catch (Exception ex) { Post(new { type = "toast", text = "backup failed: " + ex.Message }); }
+            }
+        }
+
+        static void WriteEntry(ZipArchive z, string name, string text)
+        {
+            using (Stream s = z.CreateEntry(name).Open()) { byte[] b = new UTF8Encoding(false).GetBytes(text); s.Write(b, 0, b.Length); }
+        }
+
+        void BackupImport()
+        {
+            using (OpenFileDialog d = new OpenFileDialog())
+            {
+                d.Title = "restore muzika backup";
+                d.Filter = "muzika backup (*.muzika)|*.muzika";
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    using (ZipArchive z = ZipFile.OpenRead(d.FileName))
+                    {
+                        if (z.GetEntry("muzika.json") == null) { Post(new { type = "toast", text = "that's not a muzika backup" }); return; }
+                        // only known names, written by us: nothing else in the archive is touched
+                        foreach (string f in BackupFiles)
+                        {
+                            ZipArchiveEntry e = z.GetEntry(f);
+                            if (e == null) continue;
+                            string to = Path.Combine(Program.Data, f), tmp = to + ".imp";
+                            e.ExtractToFile(tmp, true);
+                            if (File.Exists(to)) File.Delete(to);
+                            File.Move(tmp, to);
+                        }
+                        ZipArchiveEntry st = z.GetEntry("settings.json");
+                        if (st != null && st.Length < 4000000) st.ExtractToFile(Path.Combine(Program.Data, "settings_import.json"), true);
+                    }
+                }
+                catch (Exception ex) { Post(new { type = "toast", text = "restore failed: " + ex.Message }); return; }
+                noFlush = true;   // the in-memory library must not overwrite the restored one
+                Restart("--restart");
+            }
+        }
+
+        // ---------- fullscreen: the whole monitor, taskbar included ----------
+        void SetFullscreen(bool on)
+        {
+            if (on == fsOn) return;
+            if (on)
+            {
+                fsState = WindowState; fsBounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+                Rectangle scr = Screen.FromControl(this).Bounds;
+                if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
+                fsOn = true;
+                Bounds = scr; OnResized();
+            }
+            else
+            {
+                fsOn = false;
+                Bounds = fsBounds; OnResized();
+                if (fsState == FormWindowState.Maximized) WindowState = FormWindowState.Maximized;
+            }
+            Post(new { type = "fs", on = fsOn });
         }
 
         // bring the library, stats and soundcloud login over from another muzika folder
@@ -526,6 +635,19 @@ namespace Emopunk
                 c.WebResourceRequested += OnRequest;
                 c.WebMessageReceived += OnMessage;
                 c.NewWindowRequested += delegate(object s, CoreWebView2NewWindowRequestedEventArgs a) { a.Handled = true; };
+                string imp = Path.Combine(Program.Data, "settings_import.json");
+                if (File.Exists(imp))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(imp, Encoding.UTF8);
+                        if (new JavaScriptSerializer().DeserializeObject(json) is Dictionary<string, object>)
+                            settingsScript = await c.AddScriptToExecuteOnDocumentCreatedAsync(
+                                "(function(){try{var d=" + json + ";for(var k in d){if(/^ep_/.test(k)&&typeof d[k]==='string')localStorage.setItem(k,d[k]);}}catch(e){}})();");
+                    }
+                    catch { }
+                    try { File.Delete(imp); } catch { }
+                }
                 c.Navigate(Origin + "/index.html");
             }
             catch (Exception ex)
@@ -729,7 +851,16 @@ namespace Emopunk
             if (m == null) return;
             string cmd = Str(m, "cmd");
 
-            if (cmd == "ready") { ready = true; Post(new { type = "update", state = upd.Ready ? "ready" : "idle", ver = upd.NewVersion, pct = 0, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, just = Program.JustUpdated }); upd.Start(); SendLibrary(); Post(new { type = "window", max = WindowState == FormWindowState.Maximized }); Post(new { type = "discord", state = rpcState }); }
+            if (cmd == "ready")
+            {
+                ready = true;
+                if (settingsScript != null) { try { web.CoreWebView2.RemoveScriptToExecuteOnDocumentCreated(settingsScript); } catch { } settingsScript = null; }
+                bool just = upd.JustVer != null && !Updater.Newer(upd.JustVer, Program.Version) && !Updater.Newer(Program.Version, upd.JustVer);
+                Post(new { type = "update", state = upd.Ready ? "ready" : (upd.Auto ? "checking" : "idle"), ver = upd.NewVersion, pct = 0, cur = Program.Version, repo = upd.Repo, auto = upd.Auto, notes = upd.Notes,
+                    boot = true, just = just || Program.JustUpdated, justNotes = just ? upd.JustNotes : null });
+                if (!just) upd.SeenNotes();
+                upd.Start();
+                SendLibrary(); Post(new { type = "window", max = WindowState == FormWindowState.Maximized }); Post(new { type = "discord", state = rpcState }); }
             else if (cmd == "discord") { rpc.Configure(Str(m, "on") == "True", Str(m, "id"), Str(m, "gif")); Post(new { type = "discord", state = rpcState }); }
             else if (cmd == "drag") BeginDrag();
             else if (cmd == "max") ToggleMax();
@@ -826,6 +957,11 @@ namespace Emopunk
                 lib.SavePlaylists(pls, null);
             }
             else if (cmd == "updCheck") upd.CheckNow();
+            else if (cmd == "notesSeen") upd.SeenNotes();
+            else if (cmd == "updNotes") SendNotes(Str(m, "ver"));
+            else if (cmd == "backupExport") { string ls = Str(m, "ls"); BeginInvoke((MethodInvoker)delegate { BackupExport(ls); }); }
+            else if (cmd == "backupImport") BeginInvoke((MethodInvoker)BackupImport);
+            else if (cmd == "fs") SetFullscreen(Str(m, "on") == "True");
             else if (cmd == "updCfg") upd.Configure(Str(m, "repo"), Str(m, "auto") == "True");
             else if (cmd == "updApply") BeginInvoke((MethodInvoker)ApplyUpdate);
             else if (cmd == "importData") BeginInvoke((MethodInvoker)ImportData);
@@ -987,8 +1123,9 @@ namespace Emopunk
         {
             try
             {
-                Rectangle r = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
-                File.WriteAllText(BoundsFile, r.X + "," + r.Y + "," + r.Width + "," + r.Height + "," + (WindowState == FormWindowState.Maximized ? "1" : "0"));
+                Rectangle r = fsOn ? fsBounds : WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+                bool mx = fsOn ? fsState == FormWindowState.Maximized : WindowState == FormWindowState.Maximized;
+                File.WriteAllText(BoundsFile, r.X + "," + r.Y + "," + r.Width + "," + r.Height + "," + (mx ? "1" : "0"));
             }
             catch { }
         }
@@ -1049,6 +1186,7 @@ namespace Emopunk
         public Dictionary<string, double> days { get; set; }
         public double[] hours { get; set; }
         public double total { get; set; }
+        public double[] week { get; set; }      // 7 x 24: [weekday * 24 + hour], sunday = 0
     }
 
     class Library
@@ -1103,6 +1241,7 @@ namespace Emopunk
                         if (st.days == null) st.days = new Dictionary<string, double>();
                         if (st.hours == null || st.hours.Length != 24) st.hours = new double[24];
                         stats = st; haveStats = true;
+                        if (st.week == null || st.week.Length != 168) SeedWeek();
                     }
                 }
             }
@@ -1123,9 +1262,25 @@ namespace Emopunk
         }
         void Save() { WriteJson(file, tracks); }
 
+        // the weekday map is new: rebuild it roughly from the play history
+        void SeedWeek()
+        {
+            stats.week = new double[168];
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            foreach (Hist h in history)
+            {
+                Track t = Find(h.id);
+                double sec = t != null && t.dur > 0 ? Math.Min(t.dur, 600) : 150;
+                DateTime d = epoch.AddMilliseconds(h.t).ToLocalTime();
+                stats.week[(int)d.DayOfWeek * 24 + d.Hour] += sec;
+            }
+            WriteJson(statsFile, stats);
+        }
+
         // first run after the update: estimate listening time from older play history
         void SeedStats()
         {
+            stats.week = new double[168];
             DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             foreach (Hist h in history)
             {
@@ -1135,6 +1290,7 @@ namespace Emopunk
                 string k = d.ToString("yyyy-MM-dd");
                 double v; stats.days.TryGetValue(k, out v); stats.days[k] = v + sec;
                 stats.hours[d.Hour] += sec;
+                stats.week[(int)d.DayOfWeek * 24 + d.Hour] += sec;
                 stats.total += sec;
                 if (t != null) t.secs += sec;
             }
@@ -1151,6 +1307,10 @@ namespace Emopunk
                 Track t = Find(id); if (t != null) t.secs += sec;
                 double v; stats.days.TryGetValue(day, out v); stats.days[day] = v + sec;
                 stats.hours[hour] += sec;
+                if (stats.week == null || stats.week.Length != 168) stats.week = new double[168];
+                DateTime dd;
+                if (DateTime.TryParseExact(day, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dd))
+                    stats.week[(int)dd.DayOfWeek * 24 + hour] += sec;
                 stats.total += sec;
                 WriteJson(statsFile, stats);
                 if ((DateTime.Now - lastSave).TotalSeconds > 60) { Save(); lastSave = DateTime.Now; }

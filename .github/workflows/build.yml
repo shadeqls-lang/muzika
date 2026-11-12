@@ -1,0 +1,22 @@
+# every push: compile muzika.exe to catch errors, no release
+name: build
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build
+        shell: cmd
+        env:
+          CI: "1"
+        run: build.bat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: muzika
+          path: muzika.exe

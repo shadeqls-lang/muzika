@@ -245,8 +245,54 @@ body.dragging #drop div{transform:none}
 .sp-t{position:absolute;left:50%;bottom:11vh;translate:-50% 0;display:flex;flex-direction:column;align-items:center;gap:14px}
 .sp-t .logo{font-size:15px;color:#bdbdc2}
 .sp-l{display:block;width:120px;height:1px;background:rgba(var(--fg),.12);position:relative;overflow:hidden}
-.sp-l::after{content:"";position:absolute;inset:0;background:#FFFFFF;transform-origin:left;transform:scaleX(0);animation:spL 2.4s cubic-bezier(.6,0,.2,1) forwards}
-@keyframes spL{to{transform:scaleX(1)}}
+.sp-l b{position:absolute;inset:0;background:#fff;transform-origin:left;transform:scaleX(0);transition:transform .5s cubic-bezier(.3,0,.2,1)}
+.sp-s{font-size:10px;font-weight:500;letter-spacing:.06em;color:#6c6c72;height:12px;white-space:nowrap;transition:opacity .25s}
+#splash.wait #introVid{opacity:.18;transition:opacity .8s}
+#splash.wait{cursor:pointer}
+
+/* ================= what's new ================= */
+#notesBg{position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.55);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+#notes{position:fixed;left:50%;top:50%;translate:-50% -48%;z-index:111;width:min(520px,86vw);max-height:72vh;display:flex;flex-direction:column;padding:22px 24px 18px;
+  opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s,translate .5s var(--spring)}
+body.notes #notesBg,body.notes #notes{opacity:1;visibility:visible}
+body.notes #notes{translate:-50% -50%}
+#notes .nh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+#notes .nh b{font-size:26px;font-weight:700;letter-spacing:-.04em;color:var(--hi)}
+#notesB{overflow:auto;min-height:0;font-size:13px;line-height:1.55;color:var(--txt);padding-right:6px}
+#notesB h4{font-size:11px;font-weight:500;color:var(--dim);margin:14px 0 6px}
+#notesB h4:first-child{margin-top:0}
+#notesB ul{list-style:none}
+#notesB li{position:relative;padding-left:14px;margin:3px 0}
+#notesB li::before{content:"";position:absolute;left:2px;top:.72em;width:4px;height:1px;background:var(--dim)}
+#notesB p{margin:6px 0}
+#notesB b{color:var(--ink);font-weight:600}
+#notes .nf{display:flex;justify-content:flex-end;margin-top:16px}
+
+/* ================= fullscreen ================= */
+#stage{transition:opacity .18s}
+body.fsw #stage,body.fsw #dock{opacity:0}
+#fsBg{position:absolute;inset:-80px;background:center/cover;filter:blur(70px) saturate(1.1);opacity:0;transition:opacity .8s,background-image .8s;pointer-events:none}
+body:not(.color) #fsBg{filter:blur(70px) grayscale(1)}
+#fsInfo{position:absolute;left:0;right:0;top:calc(var(--cy) + var(--cw)/2 + 12vh);text-align:center;opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s;pointer-events:none}
+#fsInfo .ft{font-size:clamp(22px,3.6vh,44px);font-weight:700;letter-spacing:-.035em;color:var(--hi);max-width:70vw;margin:0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;padding-bottom:.08em}
+#fsInfo .fa{font-size:clamp(13px,1.8vh,19px);color:var(--dim);margin-top:6px}
+body.fs{--vz:min(100vh,78vw);--cw:min(34vh,26vw);--cy:43%}
+body.fs header,body.fs #left,body.fs #right,body.fs .giant,body.fs #cw .cap,body.fs #cw .mk{opacity:0;visibility:hidden;pointer-events:none}
+body.fs #fsBg{opacity:.2}
+body.fs #fsInfo{opacity:1;visibility:visible}
+body.fs #dock{transition:opacity .45s,translate .6s var(--spring)}
+body.fs.calm #dock{opacity:0;translate:-50% 26px;pointer-events:none}
+body.fs.calm,body.fs.calm *{cursor:none!important}
+#fsBtn svg{width:15px;height:15px}
+
+/* ================= heatmap ================= */
+.heat{flex:1;display:grid;grid-template-columns:20px repeat(24,minmax(0,1fr));grid-template-rows:repeat(7,minmax(0,1fr));gap:3px;min-height:110px;padding-top:6px}
+.heat s{text-decoration:none;font-size:9px;font-weight:500;color:var(--dim2);align-self:center;line-height:1}
+.heat i{border-radius:2px;background:rgba(var(--fg),calc(.035 + var(--v,0) * .8));transition:background .2s,box-shadow .2s}
+.heat i:hover{box-shadow:inset 0 0 0 1px rgba(var(--fg),.6)}
+.heat i.on{box-shadow:inset 0 0 0 1px var(--acc)}
+.axis.hax{padding-left:23px}
+.brow{display:flex;gap:8px;margin-top:10px}
 
 /* ================= stats + about (views) ================= */
 #stats,#about{position:absolute;top:84px;left:var(--pad);right:var(--pad);bottom:132px;z-index:6;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s}
@@ -608,12 +654,14 @@ body[data-theme=paper] .giant{color:var(--ink)}
 <div id="grain"></div>
 
 <div id="stage">
+  <div id="fsBg"></div>
   <div class="floor"></div>
   <div id="marq"></div>
   <canvas id="viz"></canvas>
   <div class="giant" id="initials"><span>EP</span></div>
   <div class="giant" id="bignum"><span>00</span></div>
 
+  <div id="fsInfo"><div class="ft" id="fsT"></div><div class="fa" id="fsA"></div></div>
   <div id="cw">
     <div id="cover"><div class="empty">no track</div></div>
     <i class="mk tl"></i><i class="mk tr"></i><i class="mk bl"></i><i class="mk br"></i>
@@ -692,7 +740,7 @@ body[data-theme=paper] .giant{color:var(--ink)}
     </div>
     <div class="lg card grow">
       <div class="ch"><span class="lbl">when you listen</span><span class="lbl" id="peakH"></span></div>
-      <div class="chart" id="ch24"></div><div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
+      <div class="heat" id="heat"></div><div class="axis hax"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
     </div>
   </div>
   <div class="col">
@@ -777,7 +825,11 @@ body[data-theme=paper] .giant{color:var(--ink)}
         <div class="row2"><span class="lbl">updates</span>
           <div class="seg" id="updSeg" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="1">automatic</button><button data-v="0">off</button></div>
           <input class="fin" id="updRepo" placeholder="github repo, owner/name" spellcheck="false">
-          <p><span id="updInfo">muzika</span> <button class="lo" id="updCheck" style="text-decoration:underline">check now</button></p></div>
+          <p><span id="updInfo">muzika</span> <button class="lo" id="updCheck" style="text-decoration:underline">check now</button> <button class="lo" id="updNotes" style="text-decoration:underline">what's new</button></p>
+          <p>muzika checks once when it starts. if there's a new version it downloads on the loading screen and opens already updated.</p></div>
+        <div class="row2"><span class="lbl">backup</span>
+          <p style="margin-top:0">one file with saved tracks, playlists, stats and settings. the soundcloud login stays out, so it's safe to keep anywhere.</p>
+          <div class="brow"><button class="ghost" id="bkExp">export</button><button class="ghost" id="bkImp">restore</button></div></div>
         <div class="row2"><span class="lbl">move from another folder</span>
           <p style="margin-top:0">pick an older muzika folder: library, stats, saved tracks and the soundcloud login come over, then muzika restarts.</p>
           <button class="ghost" id="impBtn" style="margin-top:10px">import data</button></div>
@@ -828,6 +880,7 @@ body[data-theme=paper] .giant{color:var(--ink)}
   </div>
   <div class="now"><div class="thumb" id="nC"></div><div style="min-width:0"><div class="t" id="nT">nothing playing</div><div class="a" id="nA">pick something in library or find</div></div></div>
   <div class="right">
+    <button class="ib off" id="fsBtn" title="fullscreen (F11)"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
     <button class="ib off eqb" id="eqBtn" title="equalizer">eq</button>
     <button class="ib off" id="radioBtn" title="radio from this track" hidden><svg viewBox="0 0 24 24"><path d="M12 10.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6zM7.8 7.8l1.3 1.3a4.1 4.1 0 0 0 0 5.8l-1.3 1.3a5.9 5.9 0 0 1 0-8.4zm8.4 0a5.9 5.9 0 0 1 0 8.4l-1.3-1.3a4.1 4.1 0 0 0 0-5.8zM5.2 5.2l1.3 1.3a7.8 7.8 0 0 0 0 11l-1.3 1.3a9.6 9.6 0 0 1 0-13.6zm13.6 0a9.6 9.6 0 0 1 0 13.6l-1.3-1.3a7.8 7.8 0 0 0 0-11z"/></svg></button>
     <button class="ib off" id="addBtn" title="add to a muzika playlist" hidden><svg viewBox="0 0 24 24"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></svg></button>
@@ -839,7 +892,9 @@ body[data-theme=paper] .giant{color:var(--ink)}
   <div class="seek"><span id="cur">0:00</span><canvas id="wave"></canvas><span id="tot">0:00</span></div>
 </div>
 
-<div id="splash"><video id="introVid" muted playsinline></video><div class="sp-t"><span class="logo">muzika</span><i class="sp-l"></i></div></div>
+<div id="splash"><video id="introVid" muted playsinline></video><div class="sp-t"><span class="logo">muzika</span><i class="sp-l"><b id="spBar"></b></i><span class="sp-s" id="spS">starting</span></div></div>
+<div id="notesBg"></div>
+<div id="notes" class="lg"><div class="nh"><span class="lbl">what's new</span><b id="notesV"></b></div><div id="notesB"></div><div class="nf"><button class="ghost" id="notesOk">got it</button></div></div>
 <div id="boom"><canvas id="boomCv"></canvas><div class="bm"><div class="bav" id="boomAv"></div><div class="bl">linked to soundcloud</div><div class="bn" id="boomName"></div></div></div>
 <div id="plMenu" class="pop lg"></div>
 <div id="toast" class="lg"><span id="toastT"></span></div>
@@ -856,12 +911,12 @@ function setVol(v){ A.forEach(x=>x.volume=v); }
 let tracks=[], history=[], queue=[], qpos=-1, cur=null, shuffle=false, repeat=false;
 let actx, analyser, freq, counted=false, listenedSec=0, lastT=0;
 const store={get(k,d){try{const v=localStorage.getItem("ep_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("ep_"+k,JSON.stringify(v))}catch(e){}}};
-let booting=true;
+let booting=true, FS=false, fsTm=0;
 const TC={acc:"#ececec",fg:"255,255,255",viz:"#f2f2f2"};
 function readTheme(){ const cs=getComputedStyle(document.body); TC.acc=cs.getPropertyValue("--acc").trim()||TC.acc; TC.fg=cs.getPropertyValue("--fg").trim()||TC.fg; TC.viz=cs.getPropertyValue("--viz").trim()||TC.viz; }
 let queueSrc=null;
 const ASSET=n=>HOST?"/asset/"+n:"assets/"+n;
-let stats={days:{},hours:new Array(24).fill(0),total:0}, pendSec=0;
+let stats={days:{},hours:new Array(24).fill(0),week:new Array(168).fill(0),total:0}, pendSec=0;
 const FX=Object.assign({theme:"noir",cache:"500",xfade:"5",viz:"focus",glass:"liquid",grain:"on",color:"bw",rpc:"off",rpcId:"",rpcGif:"",scLike:"off"},store.get("fx",{}));
 
 /* ================= host bridge ================= */
@@ -869,12 +924,15 @@ function send(o){ if(HOST) HOST.postMessage(o); }
 if(HOST){
   HOST.addEventListener("message",e=>{
     const m=e.data;
-    if(m.type==="update"){ renderUpd(m); if(m.just) setTimeout(()=>toast("updated to v"+m.cur),2500); }
+    if(m.type==="update"){ renderUpd(m); bootUpd(m); }
+    else if(m.type==="notes"){ if(m.err&&!m.text) toast("couldn't load notes"); else showNotes(m.ver,m.text); }
+    else if(m.type==="scState"){ if(!m.logged) bootStep("account"); }
     else if(m.type==="library"){
       if(m.playlists&&!Array.isArray(m.playlists)&&m.playlists.saved){ MZ={saved:m.playlists.saved||[],lists:m.playlists.lists||[]}; }
       // known tracks: everything you have listened to, kept only for stats and play counts
       const curId=cur&&cur.id; tracks=m.tracks.map(normalize); history=m.history||history;
-      if(m.stats){ stats=m.stats; if(!stats.days) stats.days={}; if(!stats.hours||stats.hours.length!==24) stats.hours=new Array(24).fill(0); }
+      if(m.stats){ stats=m.stats; if(!stats.days) stats.days={}; if(!stats.hours||stats.hours.length!==24) stats.hours=new Array(24).fill(0); if(!stats.week||stats.week.length!==168) stats.week=new Array(168).fill(0); }
+      bootStep("library");
       if(curId) cur=tracks.find(t=>t.id===curId)||cur;
       renderInfo(); renderUp(); renderToday(); if(curView==="stats") renderStats();
       if(!cur){ const l=store.get("lastId",null), t=l&&tracks.find(x=>x.id===l&&x.sc); if(t){ queue=[t.id]; qpos=0; loadById(t.id,false); } }
@@ -882,7 +940,7 @@ if(HOST){
     else if(m.type==="toast") toast(m.text);
     else if(m.type==="key"){ if(m.k==="toggle") toggle(); else if(m.k==="next") next(); else if(m.k==="prev") prev(); }
     else if(m.type==="window") document.body.classList.toggle("maxed",!!m.max);
-    else if(m.type==="scMe"){ const was=!!SC.me; SC.me=m.me||null; if(!SC.me){ SC.liked=new Set(); ST.lib=null; }
+    else if(m.type==="scMe"){ bootStep("account"); const was=!!SC.me; SC.me=m.me||null; if(!SC.me){ SC.liked=new Set(); ST.lib=null; }
       renderAccount(); updLike(); if(SC.me&&!was){ send({cmd:"scLikedIds",req:2e6+Math.floor(Math.random()*1e6)}); ST.lib=null; if(curView==="lib") libLoad(); else preloadLib(); }
       if(m.fresh&&SC.me) linkFx(SC.me);
       if(curView==="scu"&&SU.id==="me") openScUser("me",true); if(!SC.me&&(curView==="lib"||(curView==="scu"&&SU.id==="me"))) renderSc(); }
@@ -1066,7 +1124,7 @@ function loadById(id,autoplay=true){
   setTimeout(()=>{c.innerHTML=t.pic?"":'<div class="empty">NO COVER</div>';c.style.backgroundImage=t.pic?`url('${t.pic}')`:"";c.classList.remove("flip")},220);
   $("#nC").style.backgroundImage=(t.thumb||t.pic)?`url('${t.thumb||t.pic}')`:"";
   $("#title").textContent=t.title; $("#artist").textContent=t.artist; scInfoFor(t); updLike(); registerPlay(t);
-  $("#nT").textContent=t.title; $("#nA").textContent=t.artist;
+  $("#nT").textContent=t.title; $("#nA").textContent=t.artist; fsSync();
   const qi=queue.indexOf(id), pos=qi>=0?qi+1:1;
   swapGiant($("#initials"),initials(t.artist)); swapGiant($("#bignum"),pad2(pos));
   $("#capT").textContent=`n° ${pad2(pos)} / ${pad2(Math.max(1,queue.length))}`;
@@ -1228,6 +1286,7 @@ $("#colT").onclick=()=>{FX.color=FX.color==="color"?"bw":"color";applyFX()};
 let curView="player";
 const LISTV=["lib","find","scu","scpl"], NAV=[], ST={lib:null,find:null};
 function view(v){
+  if(FS&&v!=="player") setFs(false);
   if(curView==="lib"||curView==="find") ST[curView]=listState();
   curView=v; const b=document.body;
   ["lib","stats","about","find","scu","scpl","settings"].forEach(x=>b.classList.toggle("v-"+x,v===x));
@@ -1293,7 +1352,8 @@ document.addEventListener("keydown",e=>{
   else if(e.code==="KeyT") go("stats");
   else if(e.code==="Comma"&&e.ctrlKey){ e.preventDefault(); go("settings"); }
   else if(e.code==="Backspace"||(e.code==="ArrowLeft"&&e.altKey)){ e.preventDefault(); back(); }
-  else if(e.code==="Escape"){ closePops(); $("#eqp").classList.remove("open"); }
+  else if(e.code==="Escape"){ if(document.body.classList.contains("notes")) closeNotes(); else if(FS) setFs(false); else { closePops(); $("#eqp").classList.remove("open"); } }
+  else if(e.code==="F11"){ e.preventDefault(); setFs(!FS); }
   else if(e.code==="KeyS") $("#shuf").click();
   else if(e.code==="KeyR") $("#rep").click();
   else if(e.code==="KeyN") next();
@@ -1349,11 +1409,11 @@ function sizeViz(){ const r=cv.getBoundingClientRect(); VD=Math.min(devicePixelR
 let running=false, lastF=0, t0=0, energy=0;
 function wantViz(){
   if(booting||document.hidden||FX.viz==="off"||curView!=="player") return false;
-  if(FX.viz==="focus"&&!document.hasFocus()) return false;
+  if(FX.viz==="focus"&&!document.hasFocus()&&!FS) return false;
   return true;
 }
 function kick(){
-  const idle=document.hidden||(FX.viz!=="always"&&!document.hasFocus());
+  const idle=document.hidden||(FX.viz!=="always"&&!document.hasFocus()&&!FS);
   document.body.classList.toggle("idle",idle);
   if(wantViz()&&!running){ running=true; requestAnimationFrame(frame); }
 }
@@ -1834,9 +1894,7 @@ function renderStats(){
   const m30=Math.max(1,...d30.map(x=>x.v));
   $("#ch30").innerHTML=d30.map((x,i)=>`<i class="${i===29?"on":""}" style="height:${Math.max(2,x.v/m30*100)}%" title="${x.d.getDate()} ${MON[x.d.getMonth()].toLowerCase()}: ${Math.round(x.v)} min"></i>`).join("");
   $("#ax30").innerHTML=[0,7,14,21,29].map(i=>`<span>${d30[i].d.getDate()} ${MON[d30[i].d.getMonth()].slice(0,3).toLowerCase()}</span>`).join("");
-  const hs=stats.hours, mh=Math.max(1,...hs), ph=hs.indexOf(Math.max(...hs)), nh=now.getHours();
-  $("#ch24").innerHTML=hs.map((v,h)=>`<i class="${h===nh?"on":""}" style="height:${Math.max(2,v/mh*100)}%" title="${pad2(h)}:00, ${Math.round(v/60)} min"></i>`).join("");
-  $("#peakH").textContent=stats.total?`most at ${pad2(ph)}:00`:"";
+  renderHeat(now);
   const tt=tracks.filter(t=>t.secs>0).sort((a,b)=>b.secs-a.secs).slice(0,6), mt=tt.length?tt[0].secs:1;
   $("#topTracks").innerHTML=tt.length?tt.map((t,i)=>`<div class="trow"><span class="n it">${i+1}</span><div class="thumb" style="${t.pic?`background-image:url('${t.pic}')`:""}"></div>
     <div style="min-width:0"><div class="t">${esc(t.title)}</div><div class="pb"><i style="width:${t.secs/mt*100}%"></i></div></div><b class="it">${Math.round(t.secs/60)}m</b></div>`).join(""):'<div class="nodata">listen to something and the top fills up.</div>';
@@ -1846,21 +1904,142 @@ function renderStats(){
     <div style="min-width:0"><div class="t">${esc(a)}</div><div class="pb"><i style="width:${v/ma*100}%"></i></div></div><b class="it">${Math.round(v/60)}m</b></div>`).join(""):'<div class="nodata">no artists yet.</div>';
 }
 
+const WD=["sun","mon","tue","wed","thu","fri","sat"];
+function hm(sec){ const m=Math.round(sec/60); return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`; }
+function renderHeat(now){
+  const w=stats.week||[], mx=Math.max(1,...w), nd=now.getDay(), nh=now.getHours();
+  let html="", pk=-1, pv=0;
+  for(const d of [1,2,3,4,5,6,0]){           // monday first
+    html+=`<s>${WD[d].slice(0,2)}</s>`;
+    for(let h=0;h<24;h++){ const v=w[d*24+h]||0; if(v>pv){pv=v;pk=d*24+h;}
+      html+=`<i class="${d===nd&&h===nh?"on":""}" style="--v:${Math.sqrt(v/mx).toFixed(3)}" title="${WD[d]} ${pad2(h)}:00 · ${hm(v)}"></i>`; }
+  }
+  $("#heat").innerHTML=html;
+  $("#peakH").textContent=pk>=0?`most on ${WD[Math.floor(pk/24)]} at ${pad2(pk%24)}:00`:"";
+}
+
+/* ================= what's new ================= */
+function mdLite(t){
+  const out=[]; let ul=false;
+  const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\[([^\]]+)\]\([^)]+\)/g,"$1").replace(/`([^`]+)`/g,"$1");
+  for(let line of String(t||"").replace(/\r/g,"").split("\n")){
+    line=line.trim();
+    if(/^\*\*full changelog/i.test(line)) continue;
+    const li=line.match(/^[-*]\s+(.*)/);
+    if(li){ if(!ul){out.push("<ul>");ul=true;} out.push(`<li>${inl(li[1])}</li>`); continue; }
+    if(ul){out.push("</ul>");ul=false;}
+    const h=line.match(/^#{1,6}\s+(.*)/);
+    if(h) out.push(`<h4>${inl(h[1])}</h4>`); else if(line) out.push(`<p>${inl(line)}</p>`);
+  }
+  if(ul) out.push("</ul>");
+  return out.join("")||"<p>no notes for this version.</p>";
+}
+function showNotes(ver,text){
+  $("#notesV").textContent="v"+String(ver||"").replace(/^v/i,"");
+  $("#notesB").innerHTML=mdLite(text); $("#notesB").scrollTop=0;
+  document.body.classList.add("notes"); requestAnimationFrame(buildGlass);
+}
+function closeNotes(){ document.body.classList.remove("notes"); send({cmd:"notesSeen"}); }
+$("#notesOk").onclick=closeNotes; $("#notesBg").onclick=closeNotes;
+$("#updNotes").onclick=()=>{
+  if(UPD.state==="ready"&&UPD.notes) return showNotes(UPD.ver,UPD.notes);
+  if(!HOST) return toast("works in muzika.exe only");
+  send({cmd:"updNotes",ver:UPD.cur||""});
+};
+
+/* ================= backup ================= */
+$("#bkExp").onclick=()=>{
+  if(!HOST) return toast("works in muzika.exe only");
+  const ls={};
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k.startsWith("ep_")&&!k.startsWith("ep_wf_")) ls[k]=localStorage.getItem(k); } }catch(e){}
+  send({cmd:"backupExport",ls:JSON.stringify(ls)});
+};
+$("#bkImp").onclick=()=>{ if(!HOST) return toast("works in muzika.exe only"); send({cmd:"backupImport"}); };
+
+/* ================= fullscreen ================= */
+function fsSync(){
+  const t=cur; $("#fsT").textContent=t?t.title:""; $("#fsA").textContent=t?t.artist:"";
+  $("#fsBg").style.backgroundImage=t&&t.pic?`url('${t.pic}')`:"";
+}
+function setFs(on){
+  on=!!on; if(on===FS) return; FS=on;
+  const b=document.body; b.classList.add("fsw");
+  if(on&&curView!=="player") go("player");
+  if(HOST) send({cmd:"fs",on}); else if(on) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}); else if(document.fullscreenElement) document.exitFullscreen();
+  setTimeout(()=>{
+    b.classList.toggle("fs",on); fsSync(); $("#fsBtn").classList.toggle("off",!on);
+    closePops(); $("#eqp").classList.remove("open");
+    sizeViz(); kick(); fsWake();
+    setTimeout(()=>{ b.classList.remove("fsw"); sizeViz(); buildGlass(); },120);
+  },190);
+}
+function fsWake(){
+  document.body.classList.remove("calm"); clearTimeout(fsTm);
+  if(FS) fsTm=setTimeout(()=>{ if(FS&&!$("#dock").matches(":hover")&&!$("#eqp").classList.contains("open")) document.body.classList.add("calm"); else fsWake(); },2600);
+}
+addEventListener("mousemove",fsWake,{passive:true}); addEventListener("mousedown",fsWake);
+$("#fsBtn").onclick=()=>setFs(!FS);
+$("#cw").addEventListener("dblclick",()=>setFs(!FS));
+document.addEventListener("fullscreenchange",()=>{ if(!HOST&&!document.fullscreenElement&&FS) setFs(false); });
+
+/* ================= splash: real loading ================= */
+const BOOT={steps:{library:0,account:0,updates:0},dl:null,skipped:false,done:false,just:null,t0:Date.now()};
+if(!HOST) Object.keys(BOOT.steps).forEach(k=>BOOT.steps[k]=1);
+let bootTry=()=>{};
+function bootStep(k){ if(BOOT.steps[k]) return; BOOT.steps[k]=1; bootDraw(); bootTry(); }
+function bootDraw(){
+  const bar=$("#spBar"), lab=$("#spS"); if(!bar) return;
+  const ks=Object.keys(BOOT.steps), n=ks.filter(k=>BOOT.steps[k]).length;
+  let p=.08+.92*n/ks.length, txt;
+  if(BOOT.dl){
+    const v=BOOT.dl.ver?" v"+String(BOOT.dl.ver).replace(/^v/i,""):"";
+    if(BOOT.dl.state==="installing"){ p=1; txt="installing update"+v; }
+    else { p=Math.max(.02,BOOT.dl.pct||0); txt=`downloading update${v} · ${Math.round((BOOT.dl.pct||0)*100)}%`; }
+    if(Date.now()-BOOT.t0>2500&&BOOT.dl.state!=="installing") txt+="  ·  click to skip";
+  }
+  else txt=!BOOT.steps.library?"loading library":!BOOT.steps.account?"connecting soundcloud":!BOOT.steps.updates?"checking for updates":"ready";
+  bar.style.transform=`scaleX(${Math.min(1,p)})`; lab.textContent=txt;
+}
+function bootUpd(m){
+  if(m.boot&&m.just) BOOT.just={ver:m.cur,notes:m.justNotes||null};
+  if(BOOT.done||BOOT.skipped){ if(m.state!=="checking") BOOT.steps.updates=1; return; }
+  const st=m.state;
+  if(st==="downloading") BOOT.dl={state:"dl",ver:m.ver,pct:m.pct};
+  else if(st==="ready"&&m.auto!==false){ if(!BOOT.dl||BOOT.dl.state!=="installing"){ BOOT.dl={state:"installing",ver:m.ver,at:Date.now()}; send({cmd:"updApply"}); } }
+  else if(st!=="checking"){ BOOT.dl=null; BOOT.steps.updates=1; }
+  bootDraw(); bootTry();
+}
+
 /* ================= splash ================= */
 function afterBoot(){                       // heavy work waits until the intro is gone, so it never stutters
-  booting=false; buildGlass(); syncSegs(); kick();
+  booting=false; BOOT.done=true; buildGlass(); syncSegs(); kick();
+  if(BOOT.just) setTimeout(()=>{ if(BOOT.just.notes) showNotes(BOOT.just.ver,BOOT.just.notes); else send({cmd:"updNotes",ver:BOOT.just.ver}); },700);
   setTimeout(()=>{ probeDurations(); if(cur) loadWave(cur); },400);
 }
 (function(){
-  const sp=$("#splash"), v=$("#introVid"); let done=false, started=false;
+  const sp=$("#splash"), v=$("#introVid"); let done=false, started=false, clip=false;
   const finish=()=>{ if(done) return; done=true; sp.classList.add("gone"); setTimeout(()=>{ v.pause(); v.removeAttribute("src"); v.load(); sp.remove(); afterBoot(); },950); };
-  // fade starts while the clip is still moving, so it never freezes on the last frame
-  const watch=()=>{ if(done) return; if(v.duration&&v.currentTime>=v.duration-.85) return finish();
+  // leaves only when the intro has played AND the app is actually loaded (or after 7 s, whatever is slow)
+  // an update being downloaded keeps it until it's installed, unless you click
+  bootTry=()=>{
+    if(done) return;
+    const all=Object.values(BOOT.steps).every(Boolean), late=Date.now()-BOOT.t0>7000;
+    if(BOOT.dl&&!BOOT.skipped){ if(clip) sp.classList.add("wait"); return; }
+    if(clip&&(all||late)) finish(); else if(clip) sp.classList.add("wait");
+  };
+  const clipDone=()=>{ if(clip) return; clip=true; bootTry(); };
+  // the fade starts while the clip is still moving, so it never freezes on the last frame
+  const watch=()=>{ if(done||clip) return; if(v.duration&&v.currentTime>=v.duration-.85) return clipDone();
     if(v.requestVideoFrameCallback) v.requestVideoFrameCallback(watch); else setTimeout(watch,50); };
-  const start=()=>{ if(started) return; started=true; v.play().then(watch).catch(()=>setTimeout(finish,600)); };
-  v.preload="auto"; v.oncanplaythrough=start; v.onerror=()=>setTimeout(finish,500); v.onended=finish;
+  const start=()=>{ if(started) return; started=true; v.play().then(watch).catch(()=>setTimeout(clipDone,600)); };
+  v.preload="auto"; v.oncanplaythrough=start; v.onerror=()=>setTimeout(clipDone,500); v.onended=clipDone;
   v.src=ASSET("intro.webm"); v.load();
-  setTimeout(start,1200); setTimeout(finish,5000); sp.onclick=finish;
+  setTimeout(start,1200); setTimeout(clipDone,5000);
+  const tick=setInterval(()=>{ if(done) return clearInterval(tick);
+    if(BOOT.dl&&BOOT.dl.state==="installing"&&Date.now()-BOOT.dl.at>10000){ BOOT.dl=null; BOOT.steps.updates=1; }   // install didn't go through: carry on
+    bootDraw(); bootTry(); },500);
+  sp.onclick=()=>{ if(BOOT.dl&&BOOT.dl.state==="installing") return; BOOT.skipped=true; BOOT.dl=null; finish(); };
+  bootDraw();
 })();
 
 /* ================= boot ================= */
