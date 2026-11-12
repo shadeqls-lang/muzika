@@ -291,7 +291,10 @@ body.fs.calm,body.fs.calm *{cursor:none!important}
 /* ================= covers view (library) ================= */
 .vseg button{display:grid;place-items:center}
 .vseg svg{width:13px;height:13px;fill:currentColor}
-.slist.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 18px;padding:16px 12px 20px;align-content:start}
+.slist.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 20px;padding:20px 20px 22px;align-content:start}
+#scuList.grid,#libList.grid,#scList.grid{padding:20px 20px 22px}
+#scuList.grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+.slist .more{display:block;margin:14px auto 10px}
 .slist.grid .more{grid-column:1/-1;justify-self:center}
 .slist.grid .emptyl,.slist.grid .gate{grid-column:1/-1}
 .stile{min-width:0;cursor:pointer}
@@ -351,12 +354,13 @@ body.paused .stile .eqm i{animation-play-state:paused}
 /* ================= track sheet ================= */
 #ti{position:fixed;inset:0;z-index:130;background:rgba(var(--bgc),.6);backdrop-filter:blur(6px);display:grid;place-items:center;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}
 #ti.on{opacity:1;visibility:visible}
-.tip{position:relative;width:min(1000px,90vw);height:min(620px,80vh);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:32px;padding:28px;border-radius:26px;
+.tip{position:relative;width:min(1000px,90vw);height:min(620px,80vh);display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:36px;padding:32px;border-radius:28px;
   transform:translateY(14px) scale(.98);transition:transform .7s var(--spring)}
 #ti.on .tip{transform:none}
-.tic{border-radius:12px;background:var(--s2) center/cover;aspect-ratio:1;align-self:start;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 1px rgba(var(--fg),.08)}
+.tic{border-radius:14px;background:var(--s2) center/cover;aspect-ratio:1;width:100%;flex:none;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 1px rgba(var(--fg),.08)}
 body:not(.color) .tic{filter:grayscale(1) contrast(1.06)}
-.tiw{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:auto;padding-right:6px}
+.tiw{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:auto;padding:2px 40px 8px 0}
+.tileft{display:flex;flex-direction:column;min-height:0;gap:22px}
 .tiw h2{font-size:clamp(26px,4vh,40px);font-weight:700;letter-spacing:-.045em;line-height:1.02;margin-top:10px;color:var(--hi);overflow-wrap:anywhere}
 .tia{align-self:flex-start;margin-top:6px;font-size:13px;color:var(--txt);text-align:left}
 .tia:hover{color:var(--ink);text-decoration:underline}
@@ -368,29 +372,35 @@ body:not(.color) .tic{filter:grayscale(1) contrast(1.06)}
 .ib2 svg{width:15px;height:15px;fill:currentColor}
 .ib2.on{background:var(--acc);color:var(--acc-ink);box-shadow:none}
 .ib2:active{transform:scale(.9)}
-.tiyou{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px;margin-top:20px}
+.tiyou{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px}
 .tiyou .st{padding:9px 0 8px;border-bottom:1px solid var(--line)}
 .tiyou .st b{display:block;font-size:22px;font-weight:200;font-style:italic;letter-spacing:-.03em;color:var(--ink)}
 .tiyou .st span{font-size:10px;color:var(--dim);font-weight:500}
-.tid{margin-top:18px;font-size:12px;line-height:1.65;color:var(--txt);white-space:pre-line;overflow-wrap:anywhere}
+.tid{margin-top:22px;font-size:12px;line-height:1.65;color:var(--txt);white-space:pre-line;overflow-wrap:anywhere}
 .tid:empty{display:none}
 .tid a{color:var(--ink)}
-.tirl{margin-top:22px;display:block}
-.tirel{margin-top:8px;display:flex;flex-direction:column}
-.tirel .rr{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px;margin:0 -6px;border-radius:10px;cursor:pointer;transition:background .2s}
+.tirl{margin-top:26px;display:block}
+.tirel{margin-top:12px;display:flex;flex-direction:column;gap:2px}
+.tirel .rr{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:7px 10px;margin:0 -10px;border-radius:12px;cursor:pointer;transition:background .2s}
 .tirel .rr:hover{background:rgba(var(--fg),.06)}
-.tirel .rr i{width:38px;height:38px;border-radius:4px;background:var(--s2) center/cover}
+.tirel .rr i{width:40px;height:40px;border-radius:5px;background:var(--s2) center/cover;box-shadow:0 0 0 1px rgba(var(--fg),.08)}
 body:not(.color) .tirel .rr i{filter:grayscale(1)}
 .tirel .rr .t{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tirel .rr .a{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tirel .rr .d{font-size:12px;color:var(--dim);font-style:italic;font-weight:200}
 .tirel .nod{font-size:11px;color:var(--dim)}
-.tix{position:absolute;right:16px;top:16px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--dim);transition:background .2s,color .2s}
+.tix{position:absolute;right:20px;top:20px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--dim);transition:background .2s,color .2s}
 .tix:hover{background:rgba(var(--fg),.08);color:var(--ink)}
 .tix svg{width:11px;height:11px;stroke:currentColor;stroke-width:1.6;fill:none}
 #cw{cursor:pointer}
 .now .thumb{cursor:pointer}
-@media (max-width:900px){ .tip{grid-template-columns:1fr;height:86vh} .tic{width:42%} }
+@media (max-width:900px){ .tip{grid-template-columns:1fr;height:86vh} .tileft{flex-direction:row;align-items:end} .tic{width:38%} .tiyou{flex:1} }
+
+/* ================= big letters made of dots ================= */
+#dotg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .3s}
+body.dotg #dotg{opacity:1}
+body.dotg .giant span{color:transparent!important}
+body.away #dotg{opacity:0}
 
 /* ================= wrapped ================= */
 #wr{position:fixed;inset:0;z-index:140;background:radial-gradient(60% 55% at 50% 46%,var(--s1),var(--bg) 78%);display:flex;align-items:center;justify-content:center;gap:clamp(24px,4vw,64px);
@@ -795,6 +805,7 @@ body[data-theme=paper] .giant{color:var(--ink)}
   <canvas id="viz"></canvas>
   <div class="giant" id="initials"><span>EP</span></div>
   <div class="giant" id="bignum"><span>00</span></div>
+  <canvas id="dotg"></canvas>
 
   <div id="fsInfo"><div class="ft" id="fsT"></div><div class="fa" id="fsA"></div></div>
   <div id="cw">
@@ -947,6 +958,9 @@ body[data-theme=paper] .giant{color:var(--ink)}
       <div class="row2"><span class="lbl">color</span>
           <div class="seg" data-k="color" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="bw">b / w</button><button data-v="color">color</button></div>
           <p>covers in color, and muzika takes on the color of the cover that is playing. the switch in the player does the same.</p></div>
+      <div class="row2"><span class="lbl">big letters</span>
+          <div class="seg" data-k="giant" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="solid">solid</button><button data-v="dots">dots</button></div>
+          <p>dots builds the big letters on the player out of dots, like the update screen. swipe the mouse through them. they rebuild when the track changes.</p></div>
       <div class="row2"><span class="lbl">glass</span>
           <div class="seg" data-k="glass" style="grid-template-columns:repeat(2,1fr)"><div class="knob"></div><button data-v="liquid">liquid</button><button data-v="simple">simple</button></div></div>
       <div class="row2"><span class="lbl">film grain</span>
@@ -1038,7 +1052,7 @@ body[data-theme=paper] .giant{color:var(--ink)}
 
 <div id="splash"><video id="introVid" muted playsinline></video><div class="sp-t"><span class="logo">muzika</span><i class="sp-l"><b id="spBar"></b></i><span class="sp-s" id="spS">starting</span></div></div>
 <div id="ti"><div class="tip lg">
-  <div class="tic" id="tiC"></div>
+  <div class="tileft"><div class="tic" id="tiC"></div><div class="tiyou" id="tiYou"></div></div>
   <div class="tiw">
     <span class="lbl" id="tiTag">track</span>
     <h2 id="tiT"></h2>
@@ -1052,7 +1066,6 @@ body[data-theme=paper] .giant{color:var(--ink)}
       <button class="ghost sm" id="tiDl">download</button>
       <button class="ghost sm" id="tiOpen">soundcloud</button>
     </div>
-    <div class="tiyou" id="tiYou"></div>
     <div class="tid" id="tiD"></div>
     <span class="lbl tirl">sounds like this</span>
     <div class="tirel" id="tiRel"></div>
@@ -1086,7 +1099,7 @@ function readTheme(){ const cs=getComputedStyle(document.body); TC.acc=cs.getPro
 let queueSrc=null;
 const ASSET=n=>HOST?"/asset/"+n:"assets/"+n;
 let stats={days:{},hours:new Array(24).fill(0),week:new Array(168).fill(0),total:0}, pendSec=0;
-const FX=Object.assign({theme:"noir",cache:"500",xfade:"5",viz:"focus",glass:"liquid",grain:"on",color:"bw",rpc:"off",rpcId:"",rpcGif:"",scLike:"off"},store.get("fx",{}));
+const FX=Object.assign({theme:"noir",cache:"500",xfade:"5",viz:"focus",glass:"liquid",grain:"on",color:"bw",rpc:"off",rpcId:"",rpcGif:"",scLike:"off",giant:"solid"},store.get("fx",{}));
 
 /* ================= host bridge ================= */
 function send(o){ if(HOST) HOST.postMessage(o); }
@@ -1164,7 +1177,7 @@ function initials(a){
   if(w.length===1){ const m=w[0].match(/^(\p{L})\p{Ll}*?(\p{Lu})/u); return (m?m[1]+m[2]:w[0].slice(0,2)).toUpperCase(); }
   return (w[0][0]+w[1][0]).toUpperCase();
 }
-function swapGiant(el,txt){ if(el.firstElementChild.textContent===txt) return; el.classList.add("swap"); el.firstElementChild.textContent=txt;
+function swapGiant(el,txt){ if(el.firstElementChild.textContent===txt) return; el.classList.add("swap"); el.firstElementChild.textContent=txt; DG.kick(true);
   requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.remove("swap"))); }
 let tt; function toast(s){$("#toastT").textContent=s;$("#toast").classList.add("show");clearTimeout(tt);tt=setTimeout(()=>$("#toast").classList.remove("show"),1700);requestAnimationFrame(buildGlass)}
 
@@ -1470,7 +1483,7 @@ function view(v){
   $("#navR").classList.toggle("act",v==="scu"&&SU.id==="me");
   if(v==="stats") renderStats();
   const av=$("#aboutVid"); if(v==="about"){ if(!av.src) av.src=ASSET("about.webm"); av.play().catch(()=>{}); } else if(av.src){ av.pause(); }
-  if(v!=="player") requestAnimationFrame(buildGlass); kick(); updBack();
+  if(v!=="player") requestAnimationFrame(buildGlass); else setTimeout(()=>DG.redraw(),30); kick(); updBack();
 }
 function listState(){ return {items:SC.items,next:SC.next,kind:SC.kind,loading:SC.loading,title:titleEl()?titleEl().textContent:"",scroll:scBox().scrollTop}; }
 function useList(st){ SC.req++; SC.items=st?st.items:[]; SC.next=st?st.next:null; SC.kind=st?st.kind:""; SC.loading=false; if(st&&titleEl()) titleEl().textContent=st.title; renderSc(); if(st) scBox().scrollTop=st.scroll||0; }
@@ -1543,7 +1556,7 @@ function applyFX(){
   document.body.classList.toggle("simple",FX.glass==="simple");
   document.body.classList.toggle("nograin",FX.grain==="off");
   if(document.body.dataset.theme!==FX.theme){ document.body.dataset.theme=FX.theme; TINT.src=null; readTheme(); drawWave(); }
-  coverTint(); sendBg();
+  coverTint(); sendBg(); DG.mode();
   if(FX.viz==="off") vctx.clearRect(0,0,cv.width,cv.height);
   kick(); sendRpcCfg(); send({cmd:"cacheSet",mb:+FX.cache});
 }
@@ -1941,7 +1954,7 @@ function renderSc(){
   box.classList.toggle("grid",gridOn());
   if(curView==="lib"&&!SC.me&&HOST&&LIB.tab==="feed"){ box.innerHTML=gate("your feed shows up here. likes and muzika playlists work without it."); return; }
   if(curView==="scu"&&SU.id==="me"&&!SC.me&&HOST){ box.innerHTML=gate("your profile shows up here."); return; }
-  const items=visibleItems();
+  const all=visibleItems(), cap=curView==="scu"?SU.show:Infinity, items=all.slice(0,cap);
   if(!items.length){
     if(SC.loading) return;
     box.innerHTML=curView==="find"&&!SC.req?'<div class="emptyl"><div><b>find music.</b>type a name and press enter,<br>or paste a soundcloud link.</div></div>'
@@ -1951,9 +1964,10 @@ function renderSc(){
     setCount(""); return;
   }
   const st=box.scrollTop;
-  box.innerHTML=items.map(gridOn()?scTileHtml:scRowHtml).join("")+(SC.next&&!(curView==="lib"&&LIB.q)?'<button class="ghost more" id="scMore">more</button>':"");
+  const moreBtn=curView==="scu"?(all.length>cap||SC.next?'<button class="ghost more" id="scShow">show more</button>':""):(SC.next&&!(curView==="lib"&&LIB.q)?'<button class="ghost more" id="scMore">more</button>':"");
+  box.innerHTML=items.map(gridOn()?scTileHtml:scRowHtml).join("")+moreBtn;
   box.scrollTop=st;
-  const nt=items.filter(x=>!x.pl).length, np=items.length-nt;
+  const nt=all.filter(x=>!x.pl).length, np=all.length-nt;
   if(SC.kind==="hist") return setCount(nt+" tracks, last 30 days");
   setCount((nt?nt+(SC.next?"+":"")+" tracks":"")+(np?(nt?" · ":"")+np+" playlists":""));
 }
@@ -1972,6 +1986,8 @@ function scPlayFrom(it){
 }
 function scLike(id,on){ on?SC.liked.add(id):SC.liked.delete(id); send({cmd:"scLike",id,on}); renderScRow(id); updLike(); toast(on?"liked on soundcloud":"removed from your likes"); }
 const scClick=e=>{
+  if(e.target.id==="scShow"){ const n=visibleItems().length; SU.show+=gridOn()?12:12;
+    if(SU.show>n&&SC.next){ e.target.textContent="loading"; e.target.disabled=true; send({cmd:"scMore",next:SC.next,kind:SC.kind,req:SC.req}); } else renderSc(); return; }
   if(e.target.id==="scMore"){ e.target.textContent="loading"; e.target.disabled=true; send({cmd:"scMore",next:SC.next,kind:SC.kind,req:SC.req}); return; }
   const ul=e.target.closest(".ulink"); if(ul){ openScUser(ul.dataset.uid); return; }
   const row=e.target.closest(".srow,.stile"); if(!row) return;
@@ -2008,7 +2024,7 @@ function renderAccount(){
 }
 
 /* ================= soundcloud pages: profile, artist, playlist ================= */
-const SU={id:null,user:null,tab:"tracks",req:0};
+const SU={id:null,user:null,tab:"tracks",req:0,show:12};
 function openScUser(id,refresh){
   if(!HOST) return toast("works in muzika.exe only");
   if(id==="me"&&SC.me&&SC.me.id) id=String(SC.me.id);
@@ -2020,7 +2036,7 @@ function openScUser(id,refresh){
   send({cmd:"scUser",id:SU.id,req:SU.req});
   scUserTab("tracks");
 }
-function scUserTab(what){ SU.tab=what; $("#scuLbl").textContent=what; scBusy(); send({cmd:"scUserList",id:SU.id,what,req:SC.req}); }
+function scUserTab(what){ SU.tab=what; SU.show=12; $("#scuLbl").textContent=what; scBusy(); send({cmd:"scUserList",id:SU.id,what,req:SC.req}); }
 $("#scuView").onclick=e=>{ const b=e.target.closest("button"); if(!b||b.dataset.v===LIB.view) return; LIB.view=b.dataset.v; store.set("libView",LIB.view); segTo($("#scuView"),b); scBox().scrollTop=0; renderSc(); };
 $("#scuSeg").onclick=e=>{ const b=e.target.closest("button"); if(!b||b.dataset.v===SU.tab) return; segTo($("#scuSeg"),b); scUserTab(b.dataset.v); };
 $("#scuOpen").onclick=()=>{ if(SU.user&&SU.user.permalink_url) send({cmd:"open",url:SU.user.permalink_url}); };
@@ -2430,6 +2446,76 @@ $("#wrSave").onclick=()=>{ const name="muzika-wrapped-"+WR.key;
   if(HOST) send({cmd:"saveImage",data:wrPng(),name}); else { const a=document.createElement("a"); a.href=wrPng(); a.download=name+".png"; a.click(); } };
 $("#wrCopy").onclick=()=>{ if(HOST) send({cmd:"copyImage",data:wrPng()}); else $("#wrCv").toBlob(b=>navigator.clipboard.write([new ClipboardItem({"image/png":b})]).then(()=>toast("copied")).catch(()=>toast("couldn't copy"))); };
 
+/* ================= big letters as dots: the same physics as the update number ================= */
+const DG=(function(){
+  const cv=$("#dotg"), c=cv.getContext("2d"); let W=0,H=0,dpr=1, on=false, running=false, last=0, P=[], sig="", col="#fff", G=5;
+  const els=[$("#initials"),$("#bignum")];
+  function sample(){
+    const out=[];
+    for(const el of els){
+      const sp=el.firstElementChild, txt=sp.textContent.toLowerCase(); if(!txt) continue;
+      const r=el.getBoundingClientRect(), cs=getComputedStyle(el), fs=parseFloat(cs.fontSize), right=el.id==="bignum";
+      G=Math.max(4,Math.round(fs/38));
+      const off=document.createElement("canvas"); off.width=Math.ceil(r.width+fs); off.height=Math.ceil(fs*1.4);
+      const g=off.getContext("2d",{willReadFrequently:true}); g.fillStyle="#fff";
+      g.font=`700 ${fs}px SFD, "Segoe UI", sans-serif`; try{ g.letterSpacing=(-.075*fs)+"px"; }catch(e){}
+      const m=g.measureText(txt), asc=m.fontBoundingBoxAscent||fs*.8, des=m.fontBoundingBoxDescent||fs*.2, lh=parseFloat(cs.lineHeight)||fs*.76;
+      const pad=fs*.2, base=pad+asc; g.textAlign=right?"right":"left"; g.fillText(txt,right?off.width-pad:pad,base);
+      const top=r.top+(lh-(asc+des))/2, ox=right?r.right-(off.width-pad):r.left-pad, oy=top-pad;
+      const d=g.getImageData(0,0,off.width,off.height).data;
+      for(let y=0;y<off.height;y+=G) for(let x=0;x<off.width;x+=G) if(d[(y*off.width+x)*4+3]>130) out.push([ox+x,oy+y]);
+    }
+    return out;
+  }
+  function size(){ dpr=Math.min(devicePixelRatio||1,1.5); W=innerWidth; H=innerHeight; cv.width=W*dpr; cv.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0); }
+  function retarget(snap){
+    const T=sample(); col=getComputedStyle(els[0]).color||"#fff";
+    // shuffle so letters morph into each other instead of sliding in rows
+    for(let i=T.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [T[i],T[j]]=[T[j],T[i]]; }
+    const next=[];
+    for(let i=0;i<T.length;i++){
+      const p=P[i]||(P.length?Object.assign({},P[Math.random()*P.length|0],{vx:0,vy:0}):{x:T[i][0],y:T[i][1],vx:0,vy:0});
+      p.tx=T[i][0]; p.ty=T[i][1]; if(snap){ p.x=p.tx; p.y=p.ty; p.vx=p.vy=0; } next.push(p);
+    }
+    P=next;
+  }
+  function visible(){ return on&&curView==="player"&&!document.hidden&&!booting; }
+  function draw(){ c.clearRect(0,0,W,H); c.fillStyle=col; c.beginPath(); const sz=G-1; for(const p of P) c.rect(Math.round(p.x),Math.round(p.y),sz,sz); c.fill(); }
+  function step(now){
+    if(!visible()){ running=false; return; }
+    const dt=Math.min(.033,(now-last)/1000||.016); last=now;
+    const sp=Math.hypot(UOM.vx,UOM.vy), R=80+Math.min(110,sp*.06), live=performance.now()-UOM.t<80&&sp>40;
+    let moving=false;
+    for(const p of P){
+      p.vx+=((p.tx-p.x)*34-p.vx*7.5)*dt; p.vy+=((p.ty-p.y)*34-p.vy*7.5)*dt;
+      if(live){ const dx=p.x-UOM.x, dy=p.y-UOM.y, dd=dx*dx+dy*dy; if(dd<R*R){ const d=Math.sqrt(dd)||1, f=1-d/R;
+        p.vx+=(UOM.vx*.9+dx/d*sp*.5)*f*dt*14; p.vy+=(UOM.vy*.9+dy/d*sp*.5)*f*dt*14;
+        const v=Math.hypot(p.vx,p.vy); if(v>4000){ p.vx*=4000/v; p.vy*=4000/v; } } }
+      p.x+=p.vx*dt; p.y+=p.vy*dt;
+      if(!moving&&(Math.abs(p.vx)+Math.abs(p.vy)>3||Math.abs(p.tx-p.x)+Math.abs(p.ty-p.y)>.6)) moving=true;
+    }
+    draw();
+    // settled and nobody touching: stop, nothing runs while you game
+    if(!moving&&!live){ running=false; return; }
+    requestAnimationFrame(step);
+  }
+  function kick(change){
+    if(!on) return;
+    if(change){ setTimeout(()=>{ const animate=visible()&&document.hasFocus(); retarget(!animate); animate?go():visible()&&draw(); },30); return; }
+    go();
+  }
+  function go(){ if(running||!visible()) return; running=true; last=performance.now(); requestAnimationFrame(step); }
+  function mode(){
+    const want=FX.giant==="dots"; document.body.classList.toggle("dotg",want);
+    if(want&&!on){ on=true; size(); P=[]; retarget(true); if(visible()) draw(); }
+    else if(!want&&on){ on=false; P=[]; c.clearRect(0,0,W,H); }
+    else if(on){ col=getComputedStyle(els[0]).color||col; if(visible()) draw(); }
+  }
+  addEventListener("mousemove",()=>{ if(on&&!running&&curView==="player") go(); },{passive:true});
+  addEventListener("resize",()=>{ if(!on) return; clearTimeout(DG._rz); DG._rz=setTimeout(()=>{ size(); retarget(true); if(visible()) draw(); },180); });
+  return {kick,mode,redraw(){ if(on){ size(); retarget(true); if(visible()) draw(); } }};
+})();
+
 /* ================= backup ================= */
 $("#bkExp").onclick=()=>{
   if(!HOST) return toast("works in muzika.exe only");
@@ -2495,7 +2581,7 @@ function bootUpd(m){
 
 /* ================= splash ================= */
 function afterBoot(){                       // heavy work waits until the intro is gone, so it never stutters
-  booting=false; BOOT.done=true; buildGlass(); syncSegs(); kick();
+  booting=false; BOOT.done=true; buildGlass(); syncSegs(); kick(); DG.redraw();
   if(BOOT.just) setTimeout(()=>{ if(BOOT.just.notes) showNotes(BOOT.just.ver,BOOT.just.notes,true); else { NOTESFX=true; send({cmd:"updNotes",ver:BOOT.just.ver}); } },350);
   setTimeout(()=>{ probeDurations(); if(cur) loadWave(cur); },400);
 }

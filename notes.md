@@ -1,4 +1,12 @@
-## new in 0.4.3
+## new in 0.4.4
+- **big letters made of dots**: settings → look → big letters → dots. the letters and the number on the player are built from dots like this screen. swipe the mouse through them, and on the next track they fly into the new letters. when nothing moves they stop drawing, so games don't feel it
+- profiles show 12 tracks at a time with "show more", covers are a bit smaller there
+
+## fixes
+- spacing on the track page: cover and your stats on the left, more air around the similar tracks
+- covers view has proper padding inside the card
+
+## 0.4.3
 - **track page**: click the cover (or the small one in the player). description, plays, likes, release date, tags, how much you listened, copy link, download, radio and tracks that sound like it. double-click still goes fullscreen
 - **profiles, redone**: the artist sits on the left with stats and how much you listened to them, their tracks fill the right, as a list or covers
 - **this number is alive**: swipe the mouse through it
