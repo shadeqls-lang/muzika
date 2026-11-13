@@ -1,4 +1,11 @@
-## new in 0.5.4
+## new in 0.5.5
+- **settings, redone**: a list on the left like in explorer. account, look, visualizer, playback, discord, updates, backup & data. one section at a time, muzika remembers the last one
+- **soundcloud themes**: sc white and sc black, with soundcloud's own orange
+- **stats lines up**: the four cards sit on one grid, top tracks and top artists fill their cards
+- **profiles**: covers fill whole rows, no empty space before the cards below. "show more" moved next to the tabs
+- the player bar no longer cuts off the time on smaller windows
+
+## 0.5.4
 - **discord status works with one switch**: muzika has its own discord app now, nothing to paste. settings → discord status → on, with discord open on this pc
 - the muzika disc spins in the corner of the cover
 
